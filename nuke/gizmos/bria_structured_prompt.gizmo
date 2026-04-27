@@ -1,0 +1,47 @@
+set cut_paste_input [stack 0]
+version 16.0 v6
+push $cut_paste_input
+Gizmo {
+ inputs 1
+ name Bria_Structured_Prompt
+ knobChanged "import structured_prompt as _bria_sp; _bria_sp.on_knob_changed()"
+ selected true
+ xpos -394
+ ypos 374
+ postage_stamp true
+ addUserKnob {20 settings_tab l Settings}
+ addUserKnob {26 bria_header l "" +STARTLINE T "Bria : Structured Prompt"}
+ addUserKnob {4 pipeline l Pipeline M {standard lite}}
+ addUserKnob {6 use_input_image l "Use Input Image" -STARTLINE}
+ addUserKnob {6 use_structured_prompt_input l "Use Structured Prompt Input" -STARTLINE}
+ addUserKnob {26 prompt_sep l "" +STARTLINE}
+ addUserKnob {43 prompt l Prompt t "Describe the scene to generate structured prompt JSON."}
+ prompt "\n\n"
+ addUserKnob {22 load_structured_prompt_input l "Load JSON/VGL" +DISABLED T "import structured_prompt as _bria_sp; _bria_sp.on_load_structured_prompt_input()" +STARTLINE}
+ addUserKnob {43 structured_prompt_input l "Structured Prompt Input" t "Optional existing structured prompt JSON for refine mode (requires Prompt)." +HIDDEN}
+ structured_prompt_input "\n\n"
+ addUserKnob {22 run_structured_prompt l "Generate Structured Prompt" T "import structured_prompt as _bria_sp; _bria_sp.on_structured_prompt()" +STARTLINE}
+ addUserKnob {26 result_sep l "" +STARTLINE}
+ addUserKnob {6 use_global_project_path l "Use Global Project Path" +STARTLINE}
+ use_global_project_path true
+ addUserKnob {2 result_path l "Result Path" t "Optional directory or .json file path for saved structured prompt output. Default folder is prompt."}
+ addUserKnob {43 structured_prompt_output l "Structured Prompt" t "Generated structured prompt JSON output." +DISABLED}
+ addUserKnob {22 copy_structured_prompt l Copy T "import structured_prompt as _bria_sp; _bria_sp.on_copy_structured_prompt()" +STARTLINE}
+ addUserKnob {22 open_json_folder l "Open Prompt Folder" T "import structured_prompt as _bria_sp; _bria_sp.on_open_structured_prompt_folder()" +STARTLINE}
+ addUserKnob {26 dashboard_sep l "" +STARTLINE}
+ addUserKnob {1 status l Status +DISABLED}
+ status idle
+ addUserKnob {22 open_dashboard l "Open Bria Dashboard" T "import _bria_nuke_menu as _bria_menu; _bria_menu._open_bria_panel()" +STARTLINE}
+ addUserKnob {20 info_tab l Info}
+ addUserKnob {26 gizmo_info l Gizmo T "Bria Structured Prompt v1.1.1"}
+ addUserKnob {26 about_info l "About this Gizmo: " T "Generates structured prompt JSON using Bria AI."}
+}
+ Input {
+  inputs 0
+  name input_image
+  number 0
+ }
+ Output {
+  name output1
+ }
+end_group

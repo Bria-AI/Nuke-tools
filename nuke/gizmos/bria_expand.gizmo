@@ -1,0 +1,79 @@
+set cut_paste_input [stack 0]
+version 16.0 v6
+push $cut_paste_input
+Gizmo {
+ inputs 1
+ name Bria_Expand
+ knobChanged "import expand as _bria_ex; _bria_ex.on_knob_changed()"
+ selected true
+ xpos -490
+ ypos 326
+ postage_stamp true
+ addUserKnob {20 User}
+ addUserKnob {26 bria_header l "" +STARTLINE T "Bria : Expand"}
+ addUserKnob {3 seed l Seed t "Optional. Positive integer."}
+ addUserKnob {4 expand_mode l "Expand Mode" t "aspect_ratio: use ratio target. directional: expand canvas in a chosen direction." M {aspect_ratio directional}}
+ addUserKnob {4 aspect_ratio l "Aspect Ratio" M {1:1 2:3 3:2 3:4 4:3 4:5 5:4 9:16 16:9}}
+ addUserKnob {4 expand_direction l Direction t "Directional expand preset used when Expand Mode = directional." +HIDDEN M {right left top bottom top_right top_left bottom_right bottom_left}}
+ addUserKnob {3 expand_amount_pct l "Amount (%)" t "Directional canvas increase in percent of input size." +HIDDEN R 1 400}
+ expand_amount_pct 25
+ addUserKnob {43 prompt l Prompt}
+ addUserKnob {26 run_sep_top l "" +STARTLINE}
+ addUserKnob {22 run_expand l "Run Expand" T "import expand as _bria_ex; _bria_ex.on_expand()" +STARTLINE}
+ addUserKnob {26 run_sep_bottom l "" +STARTLINE}
+ addUserKnob {6 use_global_project_path l "Use Global Project Path" -STARTLINE}
+ use_global_project_path true
+ addUserKnob {2 result_path l "Result Path"}
+ addUserKnob {4 output_view l Output M {Before After}}
+ addUserKnob {26 dashboard_sep l "" +STARTLINE}
+ addUserKnob {1 status l Status +DISABLED}
+ status idle
+ addUserKnob {22 open_dashboard l "Open Bria Dashboard" T "import _bria_nuke_menu as _bria_menu; _bria_menu._open_bria_panel()" +STARTLINE}
+ addUserKnob {20 history_tab l History}
+ addUserKnob {26 history_help l "" T "Recent results history saved in this node. Use the selector to load the desired available run."}
+ addUserKnob {26 history_help_sep l "" +STARTLINE}
+ addUserKnob {4 history_selected_entry l "Selected Run" M {"No\ history\ yet"}}
+ addUserKnob {4 history_load_target l "Load Selected Run As" M {After}}
+ addUserKnob {1 history_count l "History Count" +DISABLED}
+ history_count 0
+ addUserKnob {1 history_selected_summary l Selection +DISABLED}
+ history_selected_summary "No history yet"
+ addUserKnob {1 history_selected_path l "File Path" +DISABLED}
+ history_load_target After
+ addUserKnob {22 history_load_selected_result l Load T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_load_history_result()"}
+ addUserKnob {22 history_reveal_selected_result l "Preview File" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_reveal_history_result()" +STARTLINE}
+ addUserKnob {22 history_view_selected_metadata l "View Selected Metadata" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_view_history_metadata()" +STARTLINE}
+ addUserKnob {22 history_copy_selected_metadata l "Copy Selected Metadata" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_copy_history_metadata()" +STARTLINE}
+ addUserKnob {22 history_clear_entries l "Clear History" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_clear_generation_history()" +STARTLINE}
+ addUserKnob {26 history_actions_sep l "" +STARTLINE}
+ addUserKnob {1 generation_summary l "Generation Summary" +DISABLED}
+ addUserKnob {22 view_generation_data l "View Generation Data" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_view_generation_data()" +STARTLINE}
+ addUserKnob {22 copy_generation_data l "Copy Generation Data" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_copy_generation_data()" +STARTLINE}
+ addUserKnob {43 generation_data l "Generation Data" +HIDDEN +DISABLED}
+ addUserKnob {43 generation_history_data l "Generation History" +HIDDEN +DISABLED}
+ addUserKnob {20 info_tab l Info}
+ addUserKnob {26 gizmo_info l Gizmo T "Bria Expand v1.1.1"}
+ addUserKnob {26 about_info l "About this Gizmo: " T "Expands image canvas using Bria AI"}
+}
+ Read {
+  inputs 0
+  in_colorspace scene_linear
+  out_colorspace scene_linear
+  name loader_result
+  label After
+ }
+ Input {
+  inputs 0
+  name input_image
+  label Before
+  number 0
+ }
+ Switch {
+  inputs 2
+  name switch_before_after
+  label "0=Before / 1=After"
+ }
+ Output {
+  name output1
+ }
+end_group

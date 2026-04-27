@@ -1,0 +1,18 @@
+{
+  "preset_type": "bria_node_preset",
+  "preset_version": 1,
+  "node_profile": "fibo_edit",
+  "saved_at_utc": "2026-03-24T19:44:43.626205+00:00",
+  "values": {
+    "seed": 0.0,
+    "guidance_scale": 4.0,
+    "steps_num": 0.0,
+    "prompt": "a sidecar attached to the bike with a mean cute looking bulldog wearing the same attire as the girl on the bike.\n\n",
+    "use_negative_prompt": false,
+    "negative_prompt": "\n\n",
+    "use_structured_prompt": false,
+    "structured_prompt": "\n\n",
+    "mask_type": "automatic",
+    "compare_source": "Previous Edit"
+  }
+}

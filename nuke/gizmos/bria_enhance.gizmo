@@ -1,0 +1,131 @@
+set cut_paste_input [stack 0]
+version 16.0 v6
+push $cut_paste_input
+Gizmo {
+ inputs 2
+ name Bria_Enhance
+ knobChanged "import importlib, enhance as _bria_en; importlib.reload(_bria_en); _bria_en.on_knob_changed()"
+ selected true
+ xpos -298
+ ypos 422
+ postage_stamp true
+ addUserKnob {20 User}
+ addUserKnob {26 bria_header l "" +STARTLINE T "Bria : Enhance"}
+ addUserKnob {6 preserve_alpha l "Preserve Alpha" -STARTLINE}
+ addUserKnob {4 resolution l Resolution M {1MP 2MP 4MP}}
+ addUserKnob {3 seed l Seed}
+ addUserKnob {6 sync l Sync +HIDDEN +STARTLINE}
+ sync true
+ addUserKnob {6 use_mask l "Use Mask" +STARTLINE}
+ addUserKnob {26 run_sep_top l "" +STARTLINE}
+ addUserKnob {22 run_enhance l "Run Enhance" T "import nuke, importlib, enhance as _bria_en; importlib.reload(_bria_en); _bria_en.on_enhance(nuke.thisNode())" +STARTLINE}
+ addUserKnob {26 run_sep_bottom l "" +STARTLINE}
+ addUserKnob {6 use_global_project_path l "Use Global Project Path" -STARTLINE}
+ use_global_project_path true
+ addUserKnob {2 result_path l "Result Path"}
+ addUserKnob {4 output_view l Output M {Before After}}
+ addUserKnob {26 status_sep l "" +STARTLINE}
+ addUserKnob {1 status l Status +DISABLED}
+ status idle
+ addUserKnob {22 open_dashboard l "Open Bria Dashboard" T "import _bria_nuke_menu as _bria_menu; _bria_menu._open_bria_panel()" +STARTLINE}
+ addUserKnob {20 history_tab l History}
+ addUserKnob {26 history_help l "" T "Recent results history saved in this node. Use the selector to load the desired available run."}
+ addUserKnob {26 history_help_sep l "" +STARTLINE}
+ addUserKnob {4 history_selected_entry l "Selected Run" M {"No\ history\ yet"}}
+ addUserKnob {4 history_load_target l "Load Selected Run As" M {After}}
+ addUserKnob {1 history_count l "History Count" +DISABLED}
+ history_count 0
+ addUserKnob {1 history_selected_summary l Selection +DISABLED}
+ history_selected_summary "No history yet"
+ addUserKnob {1 history_selected_path l "File Path" +DISABLED}
+ history_load_target After
+ addUserKnob {22 history_load_selected_result l Load T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_load_history_result()"}
+ addUserKnob {22 history_reveal_selected_result l "Preview File" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_reveal_history_result()" +STARTLINE}
+ addUserKnob {22 history_view_selected_metadata l "View Selected Metadata" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_view_history_metadata()" +STARTLINE}
+ addUserKnob {22 history_copy_selected_metadata l "Copy Selected Metadata" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_copy_history_metadata()" +STARTLINE}
+ addUserKnob {22 history_clear_entries l "Clear History" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_clear_generation_history()" +STARTLINE}
+ addUserKnob {26 history_actions_sep l "" +STARTLINE}
+ addUserKnob {1 generation_summary l "Generation Summary" +DISABLED}
+ addUserKnob {22 view_generation_data l "View Generation Data" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_view_generation_data()" +STARTLINE}
+ addUserKnob {22 copy_generation_data l "Copy Generation Data" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_copy_generation_data()" +STARTLINE}
+ addUserKnob {43 generation_data l "Generation Data" +HIDDEN +DISABLED}
+ addUserKnob {43 generation_history_data l "Generation History" +HIDDEN +DISABLED}
+ addUserKnob {20 info_tab l Info}
+ addUserKnob {26 gizmo_info l Gizmo T "Bria Enhance v1.1.1"}
+ addUserKnob {26 about_info l "About this Gizmo: " T "Enhances image quality using Bria AI"}
+}
+ Input {
+  inputs 0
+    name input_image
+    label Before
+  number 0
+ }
+set Ninput_image [stack 0]
+ Input {
+  inputs 0
+    name input_mask
+    label Mask
+  number 1
+ }
+set Ninput_mask [stack 0]
+push $Ninput_mask
+ Expression {
+    expr0 max(max(r,g),max(b,a))
+    expr1 max(max(r,g),max(b,a))
+    expr2 max(max(r,g),max(b,a))
+    expr3 max(max(r,g),max(b,a))
+    name mask_to_alpha_expr
+    label "Mask max(r,g,b,a)"
+ }
+set N9c331680 [stack 0]
+push $Ninput_image
+ Reformat {
+  type "to box"
+  box_width 2048
+  box_height 1556
+  box_fixed true
+  resize distort
+  center false
+  name before_to_result
+  label "Resize image to result"
+ }
+set N9c395400 [stack 0]
+push $N9c331680
+ Reformat {
+    type "to box"
+    box_width 2048
+    box_height 1556
+    box_fixed true
+    resize distort
+    center false
+    filter impulse
+    name mask_to_result
+    label "Resize mask to result"
+ }
+set N9c394a00 [stack 0]
+ Read {
+    inputs 0
+    name loader_result
+    label Enhanced
+ }
+set N9c396000 [stack 0]
+push $N9c395400
+push $N9c396000
+push $N9c394a00
+ Keymix {
+  inputs 3
+  name keymix_region
+  label "A=Before / B=Enhanced / mask=Input2"
+ }
+set N9c396800 [stack 0]
+push $Ninput_image
+push $N9c396800
+ Switch {
+  inputs 2
+  name switch_before_after
+  label "0=Before / 1=After"
+ }
+ Output {
+  name output1
+ }
+end_group

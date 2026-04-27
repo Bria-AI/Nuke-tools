@@ -1,0 +1,72 @@
+{
+  "short_description": "A dynamic image captures a woman on a personal watercraft, speeding across choppy dark blue water. A massive, curling wave looms behind her, its crest breaking into white foam. The woman, dressed in a red and black wetsuit, looks intensely forward, her dark hair flying back in the wind. The watercraft leaves a trail of white spray, emphasizing its motion and the power of the surrounding ocean.",
+  "objects": [
+    {
+      "description": "A young woman with dark, wind-swept hair, focused and determined, driving a personal watercraft.",
+      "location": "center-left",
+      "relationship": "The primary subject, actively operating the watercraft and interacting with the wave.",
+      "relative_size": "medium-to-large within frame",
+      "shape_and_color": "Human form, fair skin, dark hair, wearing a red and black wetsuit.",
+      "texture": "Smooth skin, flowing hair, sleek wetsuit material.",
+      "appearance_details": "Her hair is dramatically swept back by the wind, adding to the sense of speed and motion.",
+      "pose": "Seated, leaning slightly forward, hands on the handlebars of the watercraft.",
+      "expression": "Serious and focused, with a determined gaze.",
+      "clothing": "A form-fitting red and black wetsuit with a high collar.",
+      "action": "Driving a personal watercraft at high speed.",
+      "gender": "Female",
+      "skin_tone_and_texture": "Fair skin, smooth texture.",
+      "orientation": "Facing forward and slightly to her right."
+    },
+    {
+      "description": "A sleek, modern personal watercraft, white with blue stripes, cutting through the water and creating a significant spray.",
+      "location": "center-bottom",
+      "relationship": "Being operated by the woman, it is the vehicle of action in the scene.",
+      "relative_size": "large within frame",
+      "shape_and_color": "Elongated, streamlined shape; white with blue stripes.",
+      "texture": "Smooth, glossy surface for the hull; foamy, turbulent water spray.",
+      "appearance_details": "The blue stripes run along the sides, adding a dynamic visual element. A clear windshield is visible at the front.",
+      "orientation": "Moving forward, slightly angled towards the viewer's right."
+    },
+    {
+      "description": "A massive, powerful ocean wave, dark blue at its base and cresting into white foam, dominating the background.",
+      "location": "background, spanning left to right",
+      "relationship": "Provides the dramatic and challenging environment for the woman and watercraft.",
+      "relative_size": "large within frame",
+      "shape_and_color": "Curling, tubular shape; deep blue with white foam.",
+      "texture": "Turbulent, foamy, and wet.",
+      "appearance_details": "The wave is in the process of breaking, with a significant amount of white spray and foam at its peak.",
+      "orientation": "Curling from left to right, with its face towards the viewer."
+    },
+    {
+      "description": "Turbulent, dark blue ocean water, churned up by the moving watercraft and the breaking wave.",
+      "location": "foreground and midground",
+      "relationship": "The medium through which the watercraft travels and the wave forms.",
+      "relative_size": "large within frame",
+      "shape_and_color": "Irregular, fluid shapes; dark blue with white foam and spray.",
+      "texture": "Wet, foamy, and dynamic.",
+      "appearance_details": "The water in the foreground shows ripples and small waves, while near the watercraft, it's a chaotic spray.",
+      "orientation": "Flowing and moving, creating a sense of motion."
+    }
+  ],
+  "background_setting": "The vast, open ocean under a cloudy, overcast sky. The horizon is visible in the far distance, suggesting an expansive and wild environment.",
+  "lighting": {
+    "conditions": "Overcast daylight",
+    "direction": "Diffuse, coming from above and slightly to the front",
+    "shadows": "Minimal, soft shadows due to overcast conditions, mostly visible in the troughs of the waves."
+  },
+  "aesthetics": {
+    "composition": "Centered, with the woman and watercraft as the focal point, balanced by the large wave in the background. The composition creates a sense of dynamic action.",
+    "color_scheme": "Cool tones, dominated by various shades of blue (ocean, sky) and white (foam), with a strong contrast from the woman's red wetsuit.",
+    "mood_atmosphere": "Energetic, adventurous, and powerful, with a hint of intensity.",
+    "aesthetic_score": "very high",
+    "preference_score": "very high"
+  },
+  "photographic_characteristics": {
+    "depth_of_field": "Deep, with both the subject and the background wave in sharp focus.",
+    "focus": "Sharp focus on the subject and the immediate surroundings.",
+    "camera_angle": "Eye-level, capturing the action directly.",
+    "lens_focal_length": "Standard lens (e.g., 35mm-50mm)"
+  },
+  "style_medium": "photograph",
+  "context": "This is a dynamic action shot, likely intended for sports marketing, an adventure magazine, or a promotional image for water sports equipment."
+}

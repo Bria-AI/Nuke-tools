@@ -1,0 +1,21 @@
+{
+  "preset_type": "bria_node_preset",
+  "preset_version": 1,
+  "node_profile": "fibo_generate",
+  "saved_at_utc": "2026-03-22T20:23:02.052372+00:00",
+  "values": {
+    "preserve_alpha": true,
+    "aspect_ratio": "16:9",
+    "model": "standard",
+    "seed": 0,
+    "guidance_scale": 4,
+    "steps_num": 0,
+    "prompt": "a futuristic scene where a girl is racing in a futuristic motorcyle around skyscapers. she has long black hair and red hot streaks flowing in the wind.\n\n",
+    "use_negative_prompt": false,
+    "negative_prompt": "\n\n",
+    "use_structured_prompt": false,
+    "structured_prompt": "",
+    "tailored_model_id": "",
+    "tailored_model_influence": 0.5
+  }
+}

@@ -1,0 +1,30 @@
+"""Auth helpers (DCC-agnostic)."""
+
+from __future__ import annotations
+
+from typing import Dict
+
+from .errors import BriaAuthError
+from .version import __version__
+
+
+def build_headers(api_key: str, use_bearer: bool = False, dcc: str = "") -> Dict[str, str]:
+    """Build request headers for Bria API."""
+    if not api_key or not str(api_key).strip():
+        raise BriaAuthError("API key is empty")
+
+    token = str(api_key).split("#")[0].strip()
+    headers = {"Content-Type": "application/json"}
+    if dcc:
+        headers["User-Agent"] = f"Bria{dcc.capitalize()}/{__version__}"
+
+    if token.lower().startswith("bearer "):
+        headers["Authorization"] = token
+        return headers
+
+    if use_bearer:
+        headers["Authorization"] = f"Bearer {token}"
+        return headers
+
+    headers["api_token"] = token
+    return headers

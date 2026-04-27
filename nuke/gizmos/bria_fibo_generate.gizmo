@@ -1,0 +1,106 @@
+set cut_paste_input [stack 0]
+version 16.0 v6
+Gizmo {
+ inputs 0
+ name Bria_FIBO_Generate
+ knobChanged "import importlib, common as _bria_common, fibo_generate as _bria_fg; importlib.reload(_bria_common); importlib.reload(_bria_fg); _bria_fg.on_knob_changed()"
+ selected true
+ xpos -426
+ ypos 358
+ postage_stamp true
+ addUserKnob {20 settings_tab l Settings}
+ addUserKnob {26 bria_header l "" +STARTLINE T "Bria FIBO Generate"}
+ addUserKnob {6 preserve_alpha l "Preserve Alpha" +STARTLINE}
+ addUserKnob {4 aspect_ratio l "Aspect Ratio" M {1:1 2:3 3:2 3:4 4:3 4:5 5:4 9:16 16:9}}
+ addUserKnob {4 model l Model M {standard lite tailored}}
+ addUserKnob {3 seed l Seed t "Optional. Positive integer."}
+ addUserKnob {3 guidance_scale l "Guidance Scale" t "Optional. Integer in range 1-5." R 1 5}
+ guidance_scale 4
+ addUserKnob {3 steps_num l Steps t "Optional. 0 means unset. Positive integer when set."}
+ addUserKnob {26 prompt_sep l "" +STARTLINE}
+ addUserKnob {43 prompt l Prompt t "Enter your prompt here!"}
+ prompt "\n\n"
+ addUserKnob {6 use_negative_prompt l Negative +STARTLINE}
+ addUserKnob {43 negative_prompt l Negative t "Enter your negative prompt here!" +HIDDEN}
+ negative_prompt "\n\n"
+ addUserKnob {6 use_structured_prompt l "Structured Prompt (JSON)" +STARTLINE}
+ addUserKnob {22 load_structured_prompt l "Load JSON/VGL" t "Load a JSON/VGL file into Structured Prompt as text." -STARTLINE +DISABLED T "import importlib, common as _bria_common, fibo_generate as _bria_fg; importlib.reload(_bria_common); importlib.reload(_bria_fg); _bria_fg.on_load_structured_prompt()"}
+ addUserKnob {43 structured_prompt l Structured t "Enter your structured prompt here!" +DISABLED +HIDDEN}
+ addUserKnob {1 tailored_model_id l "Tailored Model ID" +HIDDEN}
+ addUserKnob {7 tailored_model_influence l "Tailored Influence" t "Optional. Range: 0.0 to < 2.0. 0 means unset." +HIDDEN R 0 1.99}
+ tailored_model_influence 0.5
+ addUserKnob {6 sync l Sync +HIDDEN +STARTLINE}
+ addUserKnob {26 run_sep l "" +STARTLINE}
+ addUserKnob {22 run_fibo_generate l "Run FIBO Generate" T "import importlib, common as _bria_common, fibo_generate as _bria_fg; importlib.reload(_bria_common); importlib.reload(_bria_fg); _bria_fg.on_fibo_generate()" +STARTLINE}
+ addUserKnob {26 result_sep l "" +STARTLINE}
+ addUserKnob {6 use_global_project_path l "Use Global Project Path" -STARTLINE}
+ use_global_project_path true
+ addUserKnob {2 result_path l "Result Path"}
+ addUserKnob {4 output_view l "Compare A|B" t "Before = previous run. After = latest run." M {Before After}}
+ addUserKnob {26 dashboard_sep l "" +STARTLINE}
+ addUserKnob {1 status l Status +DISABLED}
+ status idle
+ addUserKnob {22 open_dashboard l "Open Bria Dashboard" T "import _bria_nuke_menu as _bria_menu; _bria_menu._open_bria_panel()" +STARTLINE}
+ addUserKnob {20 history_tab l History}
+ addUserKnob {26 history_help l "" T "Recent results history saved in this node. Use the selector to load the desired available run."}
+ addUserKnob {26 history_help_sep l "" +STARTLINE}
+ addUserKnob {4 history_selected_entry l "Selected Run" M {"No\ history\ yet"}}
+ addUserKnob {4 history_load_target l "Load Selected Run As" M {Before After}}
+ addUserKnob {1 history_count l "History Count" +DISABLED}
+ history_count 0
+ addUserKnob {1 history_selected_summary l Selection +DISABLED}
+ history_selected_summary "No history yet"
+ addUserKnob {1 history_selected_path l "File Path" +DISABLED}
+ history_load_target After
+ addUserKnob {22 history_load_selected_result l Load T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_load_history_result()"}
+ addUserKnob {22 history_reveal_selected_result l "Preview File" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_reveal_history_result()" +STARTLINE}
+ addUserKnob {22 history_view_selected_metadata l "View Selected Metadata" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_view_history_metadata()" +STARTLINE}
+ addUserKnob {22 history_copy_selected_metadata l "Copy Selected Metadata" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_copy_history_metadata()" +STARTLINE}
+ addUserKnob {22 history_clear_entries l "Clear History" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_clear_generation_history()" +STARTLINE}
+ addUserKnob {26 history_actions_sep l "" +STARTLINE}
+ addUserKnob {1 generation_summary l "Generation Summary" +DISABLED}
+ addUserKnob {22 view_generation_data l "View Generation Data" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_view_generation_data()" +STARTLINE}
+ addUserKnob {22 copy_generation_data l "Copy Generation Data" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_copy_generation_data()" +STARTLINE}
+ addUserKnob {43 generation_data l "Generation Data" +HIDDEN +DISABLED}
+ addUserKnob {43 generation_history_data l "Generation History" +HIDDEN +DISABLED}
+ addUserKnob {20 presets_tab l Presets}
+ addUserKnob {1 preset_name l "Preset Name"}
+ addUserKnob {22 save_generation_preset l "Save Preset" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_save_generation_preset()"}
+ addUserKnob {26 preset_name_sep l "" +STARTLINE}
+ addUserKnob {4 preset_selected l Preset M {Select}}
+ addUserKnob {22 load_generation_preset l "Load Preset" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_load_generation_preset()" +STARTLINE}
+ addUserKnob {22 refresh_preset_list l "Refresh Presets" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_refresh_generation_presets()"}
+ addUserKnob {26 preset_actions_sep l "" +STARTLINE}
+ addUserKnob {2 preset_path l "Preset Path"}
+ addUserKnob {1 preset_summary l "Preset Summary" +DISABLED}
+ preset_summary "No preset loaded"
+ addUserKnob {43 preset_details l "Preset Details" +DISABLED}
+ addUserKnob {43 generation_preset_data l "Preset Data" +HIDDEN +DISABLED}
+ addUserKnob {20 info_tab l Info}
+ addUserKnob {26 gizmo_info l Gizmo T "Bria Generate v1.1.1"}
+ addUserKnob {26 about_info l "About this Gizmo: " T "Generates an image using Bria AI"}
+ addUserKnob {26 preset_help_info l Presets T "Reusable node settings saved as JSON presets. Runtime result paths and generation metadata are not included."}
+}
+ Read {
+  inputs 0
+  in_colorspace scene_linear
+  out_colorspace scene_linear
+  name loader_result
+  label After
+ }
+ Read {
+  inputs 0
+  in_colorspace scene_linear
+  out_colorspace scene_linear
+  name loader_before
+  label "Before (previous)"
+ }
+ Switch {
+  inputs 2
+  name switch_before_after
+  label "0=Before / 1=After"
+ }
+ Output {
+  name output1
+ }
+end_group

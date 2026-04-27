@@ -1,0 +1,3 @@
+# Bria Nuke Integration v0.1.0
+# No external pip packages required.
+# All dependencies are Python standard library + Nuke built-in modules (nuke, nukescripts).

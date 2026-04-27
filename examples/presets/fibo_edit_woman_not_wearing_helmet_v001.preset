@@ -1,0 +1,18 @@
+{
+  "preset_type": "bria_node_preset",
+  "preset_version": 1,
+  "node_profile": "fibo_edit",
+  "saved_at_utc": "2026-03-27T01:46:14.060790+00:00",
+  "values": {
+    "seed": 0,
+    "guidance_scale": 4,
+    "steps_num": 0,
+    "prompt": "the woman is not wearing a helmet",
+    "use_negative_prompt": false,
+    "negative_prompt": "\n\n",
+    "use_structured_prompt": false,
+    "structured_prompt": "\n\n",
+    "mask_type": "automatic",
+    "compare_source": "Original"
+  }
+}

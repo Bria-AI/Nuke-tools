@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Claude Code local state
+.claude/settings.local.json
+
+# Nuke backups and autosaves (keep in place, never commit)
+*.nk~
+*.nk.autosave
+*.autosave
+
+# Example assets (held out of first release; add back when finalised)
+examples/images/
+examples/scenes/

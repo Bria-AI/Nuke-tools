@@ -1,0 +1,76 @@
+set cut_paste_input [stack 0]
+version 16.0 v6
+push $cut_paste_input
+Gizmo {
+ inputs 2
+ name Bria_Erase
+ knobChanged "import erase as _bria_er; _bria_er.on_knob_changed()"
+ selected true
+ xpos -554
+ ypos 294
+ postage_stamp true
+ addUserKnob {20 User}
+ addUserKnob {26 bria_header l "" +STARTLINE T "Bria : Erase"}
+ addUserKnob {6 preserve_alpha l "Preserve Alpha" -STARTLINE}
+ addUserKnob {26 run_sep_top l "" +STARTLINE}
+ addUserKnob {22 run_erase l "Run Erase" T "import erase as _bria_er; _bria_er.on_erase()" +STARTLINE}
+ addUserKnob {26 run_sep_bottom l "" +STARTLINE}
+ addUserKnob {6 use_global_project_path l "Use Global Project Path" -STARTLINE}
+ use_global_project_path true
+ addUserKnob {2 result_path l "Result Path"}
+ addUserKnob {4 output_view l Output M {Before After}}
+ addUserKnob {26 dashboard_sep l "" +STARTLINE}
+ addUserKnob {1 status l Status +DISABLED}
+ status idle
+ addUserKnob {22 open_dashboard l "Open Bria Dashboard" T "import _bria_nuke_menu as _bria_menu; _bria_menu._open_bria_panel()" +STARTLINE}
+ addUserKnob {20 info_tab l Info}
+ addUserKnob {26 gizmo_info l Gizmo T "Bria Erase v1.1.1"}
+ addUserKnob {26 about_info l "About this Gizmo: " T "Erases masked regions using Bria AI"}
+}
+ Input {
+  inputs 0
+  name input_image
+  label Image
+  number 0
+ }
+set N7a097a80 [stack 0]
+ Write {
+  in_colorspace scene_linear
+  out_colorspace scene_linear
+  ocioColorspace scene_linear
+  display default
+  view sRGB
+  name save_image
+  disable true
+ }
+ Input {
+  inputs 0
+  name input_mask
+  label Mask
+  number 1
+ }
+ Write {
+  in_colorspace scene_linear
+  out_colorspace scene_linear
+  ocioColorspace scene_linear
+  display default
+  view sRGB
+  name save_mask
+  disable true
+ }
+ Read {
+  inputs 0
+  in_colorspace scene_linear
+  out_colorspace scene_linear
+  name loader_result
+ }
+push $N7a097a80
+ Switch {
+  inputs 2
+  name switch_result
+  label "0=Before / 1=After"
+ }
+ Output {
+  name outputs
+ }
+end_group

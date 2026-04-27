@@ -1,0 +1,87 @@
+set cut_paste_input [stack 0]
+version 16.0 v6
+push $cut_paste_input
+Gizmo {
+ name Bria_RMBG
+ knobChanged "import rmbg as _bria_rmbg; _bria_rmbg.on_knob_changed()"
+ selected true
+ xpos -362
+ ypos 390
+ postage_stamp true
+ addUserKnob {20 User}
+ addUserKnob {26 bria_header l "" +STARTLINE T "Bria : Remove Background"}
+ addUserKnob {6 preserve_alpha l "Preserve Alpha" -STARTLINE}
+ addUserKnob {6 premultiply l Premultiply -STARTLINE}
+ addUserKnob {26 run_sep_top l "" +STARTLINE}
+ addUserKnob {22 run_rmbg l "Remove Background" T "import rmbg as _bria_rmbg; _bria_rmbg.on_rmbg()" +STARTLINE}
+ addUserKnob {26 run_sep_bottom l "" +STARTLINE}
+ addUserKnob {6 use_global_project_path l "Use Global Project Path" -STARTLINE}
+ use_global_project_path true
+ addUserKnob {2 result_path l "Result Path"}
+ addUserKnob {4 output_view l Output M {Before After}}
+ addUserKnob {26 dashboard_sep l "" +STARTLINE}
+ addUserKnob {1 status l Status +DISABLED}
+ status idle
+ addUserKnob {22 open_dashboard l "Open Bria Dashboard" T "import _bria_nuke_menu as _bria_menu; _bria_menu._open_bria_panel()" +STARTLINE}
+ addUserKnob {20 history_tab l History}
+ addUserKnob {26 history_help l "" T "Recent results history saved in this node. Use the selector to load the desired available run."}
+ addUserKnob {26 history_help_sep l "" +STARTLINE}
+ addUserKnob {4 history_selected_entry l "Selected Run" M {"No\ history\ yet"}}
+ addUserKnob {4 history_load_target l "Load Selected Run As" M {After}}
+ addUserKnob {1 history_count l "History Count" +DISABLED}
+ history_count 0
+ addUserKnob {1 history_selected_summary l Selection +DISABLED}
+ history_selected_summary "No history yet"
+ addUserKnob {1 history_selected_path l "File Path" +DISABLED}
+ history_load_target After
+ addUserKnob {22 history_load_selected_result l Load T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_load_history_result()"}
+ addUserKnob {22 history_reveal_selected_result l "Preview File" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_reveal_history_result()" +STARTLINE}
+ addUserKnob {22 history_view_selected_metadata l "View Selected Metadata" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_view_history_metadata()" +STARTLINE}
+ addUserKnob {22 history_copy_selected_metadata l "Copy Selected Metadata" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_copy_history_metadata()" +STARTLINE}
+ addUserKnob {22 history_clear_entries l "Clear History" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_clear_generation_history()" +STARTLINE}
+ addUserKnob {26 history_actions_sep l "" +STARTLINE}
+ addUserKnob {1 generation_summary l "Generation Summary" +DISABLED}
+ addUserKnob {22 view_generation_data l "View Generation Data" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_view_generation_data()" +STARTLINE}
+ addUserKnob {22 copy_generation_data l "Copy Generation Data" T "import importlib, common as _bria_common; importlib.reload(_bria_common); _bria_common.on_copy_generation_data()" +STARTLINE}
+ addUserKnob {43 generation_data l "Generation Data" +HIDDEN +DISABLED}
+ addUserKnob {43 generation_history_data l "Generation History" +HIDDEN +DISABLED}
+ addUserKnob {20 info_tab l Info}
+ addUserKnob {26 gizmo_info l Gizmo T "Bria RMBG v1.1.1"}
+ addUserKnob {26 about_info l "About this Gizmo: " T "Removes background using Bria AI"}
+}
+ Input {
+  inputs 0
+  name input_image
+  label Before
+ }
+set N9c330000 [stack 0]
+ Write {
+  in_colorspace scene_linear
+  out_colorspace scene_linear
+  ocioColorspace scene_linear
+  display default
+  view sRGB
+  name save_image
+  disable true
+ }
+ Read {
+  inputs 0
+  in_colorspace scene_linear
+  out_colorspace scene_linear
+  name loader_result
+  label After
+ }
+ Premult {
+  name premult_result
+  label "Premult result"
+ }
+push $N9c330000
+ Switch {
+  inputs 2
+  name switch_result
+  label "0=Before / 1=After"
+ }
+ Output {
+  name output1
+ }
+end_group
