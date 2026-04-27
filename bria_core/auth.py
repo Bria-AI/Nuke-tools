@@ -8,15 +8,16 @@ from .errors import BriaAuthError
 from .version import __version__
 
 
-def build_headers(api_key: str, use_bearer: bool = False, dcc: str = "") -> Dict[str, str]:
+def build_headers(api_key: str, use_bearer: bool = False) -> Dict[str, str]:
     """Build request headers for Bria API."""
     if not api_key or not str(api_key).strip():
         raise BriaAuthError("API key is empty")
 
     token = str(api_key).split("#")[0].strip()
-    headers = {"Content-Type": "application/json"}
-    if dcc:
-        headers["User-Agent"] = f"Bria{dcc.capitalize()}/{__version__}"
+    headers = {
+        "Content-Type": "application/json",
+        "User-Agent": f"BriaNuke/{__version__}",
+    }
 
     if token.lower().startswith("bearer "):
         headers["Authorization"] = token

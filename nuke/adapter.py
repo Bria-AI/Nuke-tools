@@ -226,7 +226,6 @@ def erase_from_files(
         timeout_s=timeout_s or (cfg.default_timeout or 1200),
         use_bearer=use_bearer,
         session=session,
-        dcc="nuke",
     )
 
     payload = {
@@ -274,7 +273,6 @@ def genfill_from_files(
         timeout_s=timeout_s or (cfg.default_timeout or 1200),
         use_bearer=use_bearer,
         session=session,
-        dcc="nuke",
     )
 
     clean_prompt = _sanitize_text_field(prompt)
@@ -347,7 +345,6 @@ def fibo_edit_from_files(
         timeout_s=timeout_s or (cfg.default_timeout or 1200),
         use_bearer=use_bearer,
         session=session,
-        dcc="nuke",
     )
 
     image_b64 = file_to_base64(image_path)
@@ -412,7 +409,6 @@ def remove_background_from_files(
         timeout_s=timeout_s or (cfg.default_timeout or 1200),
         use_bearer=use_bearer,
         session=session,
-        dcc="nuke",
     )
 
     payload = {
@@ -470,7 +466,6 @@ def upscale_from_files(
         timeout_s=timeout_s or (cfg.default_timeout or 1200),
         use_bearer=use_bearer,
         session=session,
-        dcc="nuke",
     )
 
     payload: Dict[str, object] = {
@@ -535,7 +530,6 @@ def expand_from_files(
         timeout_s=timeout_s or (cfg.default_timeout or 1200),
         use_bearer=use_bearer,
         session=session,
-        dcc="nuke",
     )
 
     payload: Dict[str, object] = {
@@ -648,7 +642,6 @@ def fibo_generate_from_payload(
         timeout_s=timeout_s or (cfg.default_timeout or 1200),
         use_bearer=use_bearer,
         session=session,
-        dcc="nuke",
     )
 
     clean_payload: Dict[str, object] = dict(payload or {})
@@ -713,7 +706,6 @@ def structured_prompt_generate(
         timeout_s=timeout_s or (cfg.default_timeout or 1200),
         use_bearer=use_bearer,
         session=session,
-        dcc="nuke",
     )
 
     payload: Dict[str, Any] = {}

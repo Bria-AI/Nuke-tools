@@ -76,10 +76,10 @@ Dev launcher scripts are also provided in `tools/dev/`.
 
 ## Documentation
 
-- Detailed setup and node reference: [documentation/bria_nuke/README.md](documentation/bria_nuke/README.md)
-- Configuration reference: [documentation/CONFIG.md](documentation/CONFIG.md)
-- Repo structure: [STRUCTURE.md](STRUCTURE.md)
-- Troubleshooting: [documentation/bria_nuke/TROUBLESHOOTING.md](documentation/bria_nuke/TROUBLESHOOTING.md)
+- Detailed setup and node reference: [docs/bria_nuke/README.md](docs/bria_nuke/README.md)
+- Configuration reference: [docs/CONFIG.md](docs/CONFIG.md)
+- Repo structure: [docs/contributing/STRUCTURE.md](docs/contributing/STRUCTURE.md)
+- Troubleshooting: [docs/bria_nuke/TROUBLESHOOTING.md](docs/bria_nuke/TROUBLESHOOTING.md)
 
 ## License
 

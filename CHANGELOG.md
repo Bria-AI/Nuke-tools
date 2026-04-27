@@ -55,41 +55,6 @@ Initial release. 11 production Group nodes for Nuke 15+.
 - Bearer token auth option
 - User-Agent header: `BriaNuke/{version}`
 
-## Pre-release polish (2026-04-02 – 2026-04-21)
-
-Changes made during the open source release preparation.
-
-### Bug Fixes (verified in Nuke)
-
-- **Prompt field height collapse on .nk reload** — Multiline prompt fields (FIBO Edit, FIBO Generate, Structured Prompt) collapsed from their intended height to a single line after saving and reloading a .nk file. Nuke does not persist `Multiline_Eval_String_Knob` display height. Fixed with PySide6 + QTimer.singleShot deferred resize in `common.py`, triggered on `showPanel`. Trailing-newline padding is restored on script load via `nuke.addOnScriptLoad` in `init.py`.
-- **PySide2/PySide6 import order** — Nuke 17 ships PySide6 (Qt 6), but three files tried to import PySide2 first, which would fail silently or fall through incorrectly. Fixed import order to try PySide6 first in `dashboard_qt.py`, `bria_dashboard.py`, and `common.py`.
-- **importlib.reload() on every knobChanged** — FIBO Edit, FIBO Generate, and Enhance had `importlib.reload()` calls in their `knobChanged` handlers, causing full module reloads on every knob interaction (typing, clicking, dropdown changes). Removed from `menu.py`.
-- **Structured Prompt seed inconsistency** — Prompt field seeds in `menu.py` used 2 newlines but height hints expected 3. Aligned to 3 newlines so prompt fields display at their intended height on node creation.
-
-### Cross-Platform Fixes
-
-- **Windows TLS certificates** — Added certifi-based certificate resolution for Windows in `certs.py`. When `SSL_CERT_FILE` is not set on Windows, the tool now checks for a certifi bundle before falling back to the Windows system certificate store. Prevents `CERTIFICATE_VERIFY_FAILED` errors on Windows.
-- **Hardcoded macOS path in dashboard docs** — Replaced a hardcoded absolute home path in `bria_panel.py` with dynamic `Path("~/.bria/bria.json").expanduser()` for portability.
-
-### Audits Completed
-
-- **Code quality audit** — Reviewed showPanel handler coverage, PySide import order, importlib.reload usage, and height hint consistency across all node types. All issues found were fixed (see bug fixes above).
-- **Cross-platform audit** — Reviewed Windows and Linux compatibility across the codebase. Two issues found and fixed (see cross-platform fixes above). The rest of the codebase uses `os.pathsep`, `Path`, and platform-agnostic APIs throughout.
-- **API endpoint verification** — All 6 API endpoints (enhance, increase_resolution, remove_background, gen_fill, erase, expand) verified current against docs.bria.ai v2 documentation. No changes needed — all defaults already point to v2.
-
-### Installation Simplification
-
-- **README rewritten** — New community-standard Quick Start: single `nuke.pluginAddPath()` one-liner in `~/.nuke/init.py`, matching the convention used by NukeSurvivalToolkit, Cryptomatte, and other popular Nuke plugins.
-- **Simplified install path** — `user_init.py` template moved from `nuke/startup/` to `tools/advanced/`. The one-liner `pluginAddPath` approach replaces it as the primary install method. The existing `init.py` + `_startup_loader.py` auto-discovers `bria_core/` from its own file location.
-- **Setup helper** — `tools/bria_setup.py` stub replaced with a helper that prints the exact `pluginAddPath` line with the correct path.
-- **Vanilla install tested** — Confirmed working from a clean state with no environment variables set. Single `pluginAddPath` line loads the Bria menu, Dashboard panel, and all node types.
-
-### Houdini Compatibility (confirmed)
-
-- Shared config file `~/.bria/bria.json` works with both Nuke and Houdini toolsets simultaneously.
-- Cross-DCC API key fallback verified — `houdini_api_key` is used when `nuke_api_key` is absent, and vice versa.
-- No changes to `bria_core/` were needed — the shared module already handles both DCCs.
-
 ## Pre-release polish round 2 (2026-04-21 – 2026-04-25)
 
 Second round of pre-release work, focused on the new VGL-driven node chain (Generate VGL → FIBO Generate / FIBO Edit) and the new batch renderer.
@@ -132,6 +97,41 @@ Second round of pre-release work, focused on the new VGL-driven node chain (Gene
 - `.github/` — added `PULL_REQUEST_TEMPLATE.md`, `ISSUE_TEMPLATE/bug_report.yml`, `ISSUE_TEMPLATE/feature_request.yml`, `workflows/pr-title.yml` (conventional-commits enforcement), `workflows/release-please.yml` (auto-versioning + auto-changelog).
 - `.pre-commit-config.yaml` — ruff format + ruff check + prettier + commitizen hooks.
 - `pyproject.toml` URLs filled (`Repository`, `Documentation`, `Issues`, `Changelog`).
-- `DEVELOPER_GUIDE.md` and `REPO_MAP.md` added at repo root for engineer onboarding.
-- Internal delivery / feedback / roadmap docs stripped from `documentation/`. Public docs reduced from 45 markdown files to 4: `CONFIG.md`, `BRIA_DASHBOARD.md`, `bria_nuke/README.md`, `bria_nuke/TROUBLESHOOTING.md`.
+- `DEVELOPER_GUIDE.md` and `REPO_MAP.md` added under `docs/contributing/` for engineer onboarding.
+- Internal delivery / feedback / roadmap docs stripped from `docs/`. Public docs reduced from 45 markdown files to 4: `CONFIG.md`, `BRIA_DASHBOARD.md`, `bria_nuke/README.md`, `bria_nuke/TROUBLESHOOTING.md`.
 - Repo License: MIT (matches Houdini integration).
+
+## Pre-release polish (2026-04-02 – 2026-04-21)
+
+Changes made during the open source release preparation.
+
+### Bug Fixes (verified in Nuke)
+
+- **Prompt field height collapse on .nk reload** — Multiline prompt fields (FIBO Edit, FIBO Generate, Structured Prompt) collapsed from their intended height to a single line after saving and reloading a .nk file. Nuke does not persist `Multiline_Eval_String_Knob` display height. Fixed with PySide6 + QTimer.singleShot deferred resize in `common.py`, triggered on `showPanel`. Trailing-newline padding is restored on script load via `nuke.addOnScriptLoad` in `init.py`.
+- **PySide2/PySide6 import order** — Nuke 17 ships PySide6 (Qt 6), but three files tried to import PySide2 first, which would fail silently or fall through incorrectly. Fixed import order to try PySide6 first in `dashboard_qt.py`, `bria_dashboard.py`, and `common.py`.
+- **importlib.reload() on every knobChanged** — FIBO Edit, FIBO Generate, and Enhance had `importlib.reload()` calls in their `knobChanged` handlers, causing full module reloads on every knob interaction (typing, clicking, dropdown changes). Removed from `menu.py`.
+- **Structured Prompt seed inconsistency** — Prompt field seeds in `menu.py` used 2 newlines but height hints expected 3. Aligned to 3 newlines so prompt fields display at their intended height on node creation.
+
+### Cross-Platform Fixes
+
+- **Windows TLS certificates** — Added certifi-based certificate resolution for Windows in `certs.py`. When `SSL_CERT_FILE` is not set on Windows, the tool now checks for a certifi bundle before falling back to the Windows system certificate store. Prevents `CERTIFICATE_VERIFY_FAILED` errors on Windows.
+- **Hardcoded macOS path in dashboard docs** — Replaced a hardcoded absolute home path in `bria_panel.py` with dynamic `Path("~/.bria/bria.json").expanduser()` for portability.
+
+### Audits Completed
+
+- **Code quality audit** — Reviewed showPanel handler coverage, PySide import order, importlib.reload usage, and height hint consistency across all node types. All issues found were fixed (see bug fixes above).
+- **Cross-platform audit** — Reviewed Windows and Linux compatibility across the codebase. Two issues found and fixed (see cross-platform fixes above). The rest of the codebase uses `os.pathsep`, `Path`, and platform-agnostic APIs throughout.
+- **API endpoint verification** — All 6 API endpoints (enhance, increase_resolution, remove_background, gen_fill, erase, expand) verified current against docs.bria.ai v2 documentation. No changes needed — all defaults already point to v2.
+
+### Installation Simplification
+
+- **README rewritten** — New community-standard Quick Start: single `nuke.pluginAddPath()` one-liner in `~/.nuke/init.py`, matching the convention used by NukeSurvivalToolkit, Cryptomatte, and other popular Nuke plugins.
+- **Simplified install path** — `user_init.py` template moved from `nuke/startup/` to `tools/advanced/`. The one-liner `pluginAddPath` approach replaces it as the primary install method. The existing `init.py` + `_startup_loader.py` auto-discovers `bria_core/` from its own file location.
+- **Setup helper** — `tools/bria_setup.py` stub replaced with a helper that prints the exact `pluginAddPath` line with the correct path.
+- **Vanilla install tested** — Confirmed working from a clean state with no environment variables set. Single `pluginAddPath` line loads the Bria menu, Dashboard panel, and all node types.
+
+### Houdini Compatibility (confirmed)
+
+- Shared config file `~/.bria/bria.json` works with both Nuke and Houdini toolsets simultaneously.
+- Cross-DCC API key fallback verified — `houdini_api_key` is used when `nuke_api_key` is absent, and vice versa.
+- No changes to `bria_core/` were needed — the shared module already handles both DCCs.

@@ -31,14 +31,12 @@ class BriaClient:
         timeout_s: int = 1200,
         use_bearer: bool = False,
         session: Optional[object] = None,
-        dcc: str = "",
     ) -> None:
         self.api_endpoint = api_endpoint.rstrip("/")
         self.api_key = api_key
         self.timeout_s = timeout_s
         self.use_bearer = use_bearer
         self.session = session
-        self.dcc = dcc
 
     def _join_url(self, suffix: str) -> str:
         base = self.api_endpoint.rstrip("/")
@@ -56,7 +54,7 @@ class BriaClient:
         image_path: Optional[str] = None,
         mask_path: Optional[str] = None,
     ) -> Tuple["_SimpleResponse", str]:
-        headers = build_headers(self.api_key, use_bearer=self.use_bearer, dcc=self.dcc)
+        headers = build_headers(self.api_key, use_bearer=self.use_bearer)
         headers.setdefault("Accept", "application/json")
 
         attempts = []
@@ -187,7 +185,7 @@ class BriaClient:
             status_url = data.get("status_url") or data.get("statusUrl")
 
         if status_url:
-            headers = build_headers(self.api_key, use_bearer=self.use_bearer, dcc=self.dcc)
+            headers = build_headers(self.api_key, use_bearer=self.use_bearer)
             return self._poll_status(status_url, headers=headers, timeout_s=self.timeout_s)
 
         return data

@@ -7,11 +7,9 @@ This file is a representative map of key folders/files, not a byte-for-byte exha
 ```
 repo-root/
 ├── README.md
-├── STRUCTURE.md
 ├── LICENSE
 ├── changelog.md
 ├── pyproject.toml
-├── requirements.txt
 ├── .gitignore
 │
 ├── bria_core/                              ← DCC-agnostic core
@@ -81,20 +79,24 @@ repo-root/
 │   ├── prompt/                             ← structured prompt JSONs
 │   └── scenes/                             ← example .nk scenes
 │
-└── documentation/
+└── docs/
     ├── CONFIG.md                           ← config file reference
     ├── BRIA_DASHBOARD.md                   ← Dashboard panel reference
-    └── bria_nuke/
-        ├── README.md                       ← full setup + node reference
-        └── TROUBLESHOOTING.md
+    ├── bria_nuke/
+    │   ├── README.md                       ← full setup + node reference
+    │   └── TROUBLESHOOTING.md
+    └── contributing/                       ← engineering / contributor docs
+        ├── DEVELOPER_GUIDE.md
+        ├── REPO_MAP.md
+        └── STRUCTURE.md
 ```
 
 ## Where to Start
 
-- Installation: top-level [README.md](README.md)
-- Full Nuke setup and node reference: [documentation/bria_nuke/README.md](documentation/bria_nuke/README.md)
-- Config file reference: [documentation/CONFIG.md](documentation/CONFIG.md)
-- Dashboard panel: [documentation/BRIA_DASHBOARD.md](documentation/BRIA_DASHBOARD.md)
+- Installation: top-level [README.md](../../README.md)
+- Full Nuke setup and node reference: [docs/bria_nuke/README.md](../bria_nuke/README.md)
+- Config file reference: [docs/CONFIG.md](../CONFIG.md)
+- Dashboard panel: [docs/BRIA_DASHBOARD.md](../BRIA_DASHBOARD.md)
 
 ## Notes
 

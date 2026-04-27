@@ -26,7 +26,7 @@ classifiers = [
 [project.urls]
 Homepage = "https://bria.ai"
 Repository = "https://github.com/Bria-AI/nuke-tools"
-Documentation = "https://github.com/Bria-AI/nuke-tools/blob/main/documentation/bria_nuke/README.md"
+Documentation = "https://github.com/Bria-AI/nuke-tools/blob/main/docs/bria_nuke/README.md"
 Issues = "https://github.com/Bria-AI/nuke-tools/issues"
 Changelog = "https://github.com/Bria-AI/nuke-tools/blob/main/changelog.md"
 

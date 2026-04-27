@@ -38,7 +38,7 @@ Split into two Python packages:
 - `bria_core/` — DCC-agnostic core (HTTP client, auth, config, TLS, logging, shared Qt dashboard widget). **Shared 1:1 with the Houdini integration.** Same `~/.bria/bria.json` config file works for both DCCs.
 - `nuke/` — Nuke-specific adapter, menu/panel registration, and per-node modules.
 
-Full node reference: [`documentation/bria_nuke/README.md`](documentation/bria_nuke/README.md).
+Full node reference: [`docs/bria_nuke/README.md`](../bria_nuke/README.md).
 Directory-level map: [`REPO_MAP.md`](REPO_MAP.md).
 
 ## Entrypoint & boot order
@@ -121,9 +121,9 @@ Both scripts detect the platform via `uname` and launch Nuke accordingly. Edit t
 
 See [`REPO_MAP.md`](REPO_MAP.md) for the full per-file breakdown. Summary:
 
-**Ships to users:** `bria_core/`, `nuke/`, `tools/bria_setup.py`, `tools/advanced/user_init.py`, `examples/`, `documentation/`, root files (`README.md`, `LICENSE`, `changelog.md`, `STRUCTURE.md`, `pyproject.toml`, `requirements.txt`).
+**Ships to users:** `bria_core/`, `nuke/`, `tools/bria_setup.py`, `tools/advanced/user_init.py`, `examples/`, `docs/`, root files (`README.md`, `LICENSE`, `changelog.md`, `pyproject.toml`).
 
-**Dev-only:** `tools/dev/start_nuke.sh`, `tools/dev/start_nuke.bat`, `nuke/export_gizmos.py` (gizmo regeneration — only runs when `BRIA_EXPORT_GIZMOS_ON_STARTUP=1`), `.github/`, `.pre-commit-config.yaml`, `DEVELOPER_GUIDE.md`, `REPO_MAP.md`, `.gitignore`.
+**Dev-only:** `tools/dev/start_nuke.sh`, `tools/dev/start_nuke.bat`, `nuke/export_gizmos.py` (gizmo regeneration — only runs when `BRIA_EXPORT_GIZMOS_ON_STARTUP=1`), `.github/`, `.pre-commit-config.yaml`, `docs/contributing/`, `.gitignore`.
 
 ## Conventional commits & Release Please
 
@@ -186,7 +186,7 @@ ignore = ["PERF203", "E402", "F821"]
 
 ## Tests
 
-There is no automated test suite yet. Verification is manual in Nuke — see the regression checklist in `REPO_MAP.md` and the smoke-test walkthrough in [`documentation/bria_nuke/README.md`](documentation/bria_nuke/README.md). Adding pytest coverage for `bria_core/` is a reasonable post-release task since the core is DCC-agnostic and doesn't need Nuke to run.
+There is no automated test suite yet. Verification is manual in Nuke — see the regression checklist in `REPO_MAP.md` and the smoke-test walkthrough in [`docs/bria_nuke/README.md`](../bria_nuke/README.md). Adding pytest coverage for `bria_core/` is a reasonable post-release task since the core is DCC-agnostic and doesn't need Nuke to run.
 
 ## User-Agent contract
 
