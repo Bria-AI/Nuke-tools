@@ -1,5 +1,12 @@
 # Bria Nuke Integration - Changelog
 
+## [0.1.1](https://github.com/Bria-AI/Nuke-tools/compare/bria-nuke-v0.1.0...bria-nuke-v0.1.1) (2026-04-27)
+
+
+### Bug Fixes
+
+* changes pre-release ([c03111b](https://github.com/Bria-AI/Nuke-tools/commit/c03111bd0d411a8efd81bd993b2aa7283ff039aa))
+
 ## v0.1.0 (2026-04-25)
 
 Initial release. 11 production Group nodes for Nuke 15+.
