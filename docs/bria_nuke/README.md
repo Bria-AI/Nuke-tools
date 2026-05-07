@@ -105,7 +105,7 @@ Current node set (11):
 Enhance defaults and controls:
 
 - `preserve_alpha` defaults to **on**
-- `sync` is hidden on current new nodes and forced to `true` at runtime because async polling is not implemented for Enhance yet
+- `sync` is hidden on current new nodes and forced to `false` at runtime — Bria's `/v2/image/edit/enhance` endpoint stopped accepting `sync=true` (returns 422) in May 2026, and `BriaClient._poll_status` handles the async response transparently
 - `seed` is optional
 - `Use Mask` toggles region-limited internal composite (`Keymix`) between original and enhanced result
 - mask inputs without alpha are normalized internally (mask red -> alpha) before compositing
@@ -153,6 +153,13 @@ FIBO Generate UX highlights:
 - includes `status` field (`idle` / `processing` / `done` / `error`)
 - includes `Open Bria Dashboard` button
 - `Before` / `After` compares previous generated result against latest generated result
+- **Multi-variant batch (Generate Multiple Images)**:
+	- `Generate Multiple Images` toggle reveals a `Num Images` dropdown (2, 3, or 4), an `Image Index` slider, and a `Use This Image` button
+	- toggle ON → on Run, the node fires N parallel async calls to `/v2/image/generate` (the endpoint returns one image per call, so true batching is parallel-call style; per-variant seed offset is applied when a base seed is set so variants are actually different)
+	- saved files are suffixed `_v01.png` … `_vNN.png` next to the canonical `result_path`; the canonical path points at variant 1 by default
+	- after a multi-variant run, drag the `Image Index` slider to switch the internal Read between variants without re-running
+	- `Use This Image` promotes the currently-displayed variant to be the canonical `result_path` so downstream nodes (Sequence Output, etc.) consume the locked-in variant
+	- sidecar JSON records every variant in `result_paths`, with `result_path` / `image_path` still pointing at the first for backward compatibility
 
 FIBO Edit UX highlights:
 
@@ -197,10 +204,18 @@ Generate VGL node history:
 
 FIBO Edit Recipes UX highlights:
 
-- categorized preset launcher built on FIBO Edit's execution path; ships with 99 prompts across 11 categories (Style, Weather, Seasons, Time of Day, Camera, Lighting, Compositing, Cleanup, AI Corrections, Object Edits, plus Custom for user prompts)
+- categorized preset launcher built on FIBO Edit's execution path; ships with 100+ prompts across 11 categories (Style, Weather, Seasons, Time of Day, Camera, Lighting, Compositing, Cleanup, AI Corrections, Object Edits, plus Custom for user prompts)
 - pick a category → the matching Preset dropdown appears with that category's options; selecting a preset auto-fills the prompt field
-- **Object-targeted presets** (5 of them: delete, replace, isolate, change color, change material) reveal 5 fixed Object slots — fill in the names of objects in your image and the prompt is rebuilt with constraint-injection ("STRICT LOCKS") wording so the model only edits what you specify
-- **Compositing-targeted presets** (7 of them: harmonize lighting, match shadows, blend edges, color harmonize, fix reflections, integrate elements, match ambient) reveal 5 fixed Element slots — describe which composited elements need attention
+- **Object-targeted presets** (delete, replace, isolate, change color, change material) reveal 5 fixed Object slots — fill in the names of objects in your image and the prompt is rebuilt with constraint-injection ("STRICT LOCKS") wording so the model only edits what you specify. Isolate Object and Delete Object work with object name only (no modifier required); other presets fall back to the generic preset when the modifier is missing.
+- **Compositing-targeted presets** (harmonize lighting, match shadows, blend edges, color harmonize, fix reflections, integrate elements, match ambient, **Create Mask**, **Create Soft Mask**, **Remove Greenscreen Spill**) reveal 5 fixed Element slots — describe which composited elements need attention
+- **Create Mask** outputs a clean binary alpha matte (white over named element(s), black elsewhere) suitable as a luminance key
+- **Create Soft Mask** outputs a grayscale density matte for atmospherics — smoke, fire, dust, fog, mist — where solid objects in the same frame remain pure black
+- **Remove Greenscreen Spill** removes green/blue-screen color contamination, fringing, and edge spill from named element(s) while preserving naturally-occurring greens (foliage, signage, wardrobe). Designed to run after the keyed subject is composited over its new background.
+- **Premultiply with Mask toggle + Mask Edge Softness slider** appear automatically when Create Mask or Create Soft Mask is the active preset
+	- toggle ON → routes the API-returned mask through an internal `Blur → FilterErode → Copy(rgb=input, a=mask.red) → Premult` chain, producing a clean cutout element with anti-aliased edges
+	- toggle OFF → output is the raw API mask (the existing behavior)
+	- Mask Edge Softness drives the Blur size and a half-size FilterErode that compensates for blur expansion, so the alpha stays tight to the named element
+	- both controls are hidden for any other preset and auto-clear when the user switches preset/category, so subsequent runs do not unexpectedly produce cutouts
 - auto-vs-manual prompt tracking: if you edit the prompt manually after a preset is loaded, switching presets won't clobber your edits
 - delegates the actual API call to the existing FIBO Edit pipeline — same history, presets, metadata sidecar, and viewer behavior
 

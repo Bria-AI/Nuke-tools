@@ -50,12 +50,14 @@ That's it — you're ready to use the tools.
 | Erase | Remove objects with inpainting |
 | Expand | Extend image canvas with AI generation |
 | FIBO Edit | Prompt-driven image editing |
-| FIBO Edit Recipes | FIBO Edit with 99 curated preset prompts across 11 categories |
-| FIBO Generate | Text-to-image generation |
+| FIBO Edit Recipes | FIBO Edit with 100+ curated preset prompts across 11 categories — including Create Mask, Create Soft Mask, and Remove Greenscreen Spill compositing presets |
+| FIBO Generate | Text-to-image generation with multi-variant batch (1–4 in parallel) |
 | Generate VGL | Structured-prompt JSON generator (chains into FIBO nodes) |
 | Sequence Output | Batch render a chain of upstream Bria nodes across a frame range |
 
 All tools are accessible from the **Bria** menu or by pressing Tab and typing "bria".
+
+Every Bria node also includes **View Generation Data** and **Copy Generation Data** buttons (Settings tab) for inspecting or copying the most recent run's prompt, seed, response, and full sidecar JSON.
 
 ## Shared configuration
 
@@ -76,10 +78,10 @@ Dev launcher scripts are also provided in `tools/dev/`.
 
 ## Documentation
 
-- Detailed setup and node reference: [docs/bria_nuke/README.md](docs/bria_nuke/README.md)
-- Configuration reference: [docs/CONFIG.md](docs/CONFIG.md)
-- Repo structure: [docs/contributing/STRUCTURE.md](docs/contributing/STRUCTURE.md)
-- Troubleshooting: [docs/bria_nuke/TROUBLESHOOTING.md](docs/bria_nuke/TROUBLESHOOTING.md)
+- Detailed setup and node reference: [documentation/bria_nuke/README.md](documentation/bria_nuke/README.md)
+- Configuration reference: [documentation/CONFIG.md](documentation/CONFIG.md)
+- Repo structure: [STRUCTURE.md](STRUCTURE.md)
+- Troubleshooting: [documentation/bria_nuke/TROUBLESHOOTING.md](documentation/bria_nuke/TROUBLESHOOTING.md)
 
 ## License
 
