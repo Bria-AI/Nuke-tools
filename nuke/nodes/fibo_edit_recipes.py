@@ -1252,6 +1252,17 @@ def _apply_visibility(node: Any) -> None:
             comp_header.setVisible(show_comp)
         except Exception:
             pass
+
+    # 'Premultiply with Mask' + 'Mask Edge Softness' are mask-preset-only controls
+    # (Create Mask hard, Create Soft Mask). Same internal Premultiply chain serves both.
+    show_premult = category == "compositing" and preset_token in _MASK_PRESETS
+    for name in ("premultiply_with_mask", "mask_edge_softness"):
+        k = node.knob(name)
+        if k is not None:
+            try:
+                k.setVisible(show_premult)
+            except Exception:
+                pass
     for i in range(1, MAX_COMP_SLOTS + 1):
         k = node.knob(f"comp_element_desc_{i}")
         if k is not None:
@@ -1289,11 +1300,13 @@ def on_category_changed(node: Any) -> None:
     category = _current_category(node)
     if category == "custom":
         _set_prompt(node, "")
+        _clear_premultiply_if_not_create_mask(node)
         _apply_visibility(node)
         return
 
     presets = PRESET_CATEGORIES.get(category, [])
     if not presets:
+        _clear_premultiply_if_not_create_mask(node)
         _apply_visibility(node)
         return
 
@@ -1320,6 +1333,7 @@ def on_category_changed(node: Any) -> None:
         except Exception:
             pass
 
+    _clear_premultiply_if_not_create_mask(node)
     _apply_visibility(node)
 
 
@@ -1349,6 +1363,8 @@ def on_preset_changed(node: Any) -> None:
         targeting_active = True
 
     _set_prompt(node, prompt_text)
+    _clear_premultiply_if_not_create_mask(node)
+    _apply_visibility(node)
 
     auto_knob = node.knob("_auto_prompt")
     if auto_knob is not None:
@@ -1368,6 +1384,24 @@ def on_target_changed(node: Any) -> None:
         _sync_object_prompt(node, preset_token)
     elif category == "compositing" and preset_token in TARGETED_COMP_PRESETS:
         _sync_comp_prompt(node, preset_token)
+
+
+def _clear_premultiply_if_not_create_mask(node: Any) -> None:
+    """Clear the Premultiply with Mask toggle whenever the active preset is not a
+    mask preset (create_mask or create_soft_mask), so users don't get unpredictable
+    output after switching presets. Name kept for backward compat."""
+    category = _current_category(node)
+    preset_token = _current_preset_token(node, category)
+    if category == "compositing" and preset_token in _MASK_PRESETS:
+        return
+    pkn = node.knob("premultiply_with_mask")
+    if pkn is None:
+        return
+    try:
+        if bool(pkn.value()):
+            pkn.setValue(False)
+    except Exception:
+        pass
 
 
 # ---------------------------------------------------------------------------

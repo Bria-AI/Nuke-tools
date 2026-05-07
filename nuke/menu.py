@@ -1597,6 +1597,43 @@ def _create_fibo_edit_recipes_node() -> None:
     for i in range(1, max_comp_slots + 1):
         _add_knob(nuke.String_Knob(f"comp_element_desc_{i}", f"Element {i}", ""))
 
+    # "Premultiply with Mask" — only visible when the Create Mask preset is active.
+    # When ON, an internal Copy+Premult chain produces a cutout (input image with
+    # alpha sourced from the API-returned mask's red channel). Auto-clears when the
+    # user switches preset/category away from create_mask.
+    premult_with_mask_knob = nuke.Boolean_Knob(
+        "premultiply_with_mask", "Premultiply with Mask", False
+    )
+    try:
+        premult_with_mask_knob.setTooltip(
+            "When 'Create Mask' is active, premultiply the API-returned mask against "
+            "the original input image to output a clean cutout (RGB from input, alpha "
+            "from mask's red channel). Disabled by default; auto-clears on preset change."
+        )
+        premult_with_mask_knob.setFlag(nuke.STARTLINE)
+        premult_with_mask_knob.setVisible(False)
+    except Exception:
+        pass
+    _add_knob(premult_with_mask_knob)
+    # Mask Edge Softness slider — Bria's mask is sometimes returned at lower-than-source
+    # resolution and upscaled with hard binary edges, leaving a stair-step pattern. A
+    # small Gaussian blur smooths the boundary; a paired FilterErode at half the blur
+    # size compensates for silhouette expansion so the alpha stays tight to the named
+    # element. Higher values = softer edges (use for hair, motion blur, atmospherics).
+    mask_softness_knob = nuke.Double_Knob("mask_edge_softness", "Mask Edge Softness")
+    try:
+        mask_softness_knob.setRange(0.0, 5.0)
+        mask_softness_knob.setValue(1.5)
+        mask_softness_knob.setTooltip(
+            "Smooths staircase aliasing on the mask boundary before premultiplying. "
+            "0 = raw model output (may be aliased). 1-2 = clean anti-aliased edges. "
+            "3-5 = softer feather (good for hair, fur, motion blur)."
+        )
+        mask_softness_knob.setVisible(False)
+    except Exception:
+        pass
+    _add_knob(mask_softness_knob)
+
     # Hidden auto-prompt tracker
     auto_prompt_knob = nuke.String_Knob("_auto_prompt", "_auto_prompt", "")
     _add_knob(auto_prompt_knob)
@@ -1878,9 +1915,100 @@ def _create_fibo_edit_recipes_node() -> None:
         pass
 
     _repair_fibo_edit_internal_graph(node)
+    _add_premultiply_with_mask_path(node)
     _connect_created_node_inputs(node, selected_inputs)
 
     nuke.tprint(f"[Bria] Created node: {node.name()}")
+
+
+def _add_premultiply_with_mask_path(node) -> None:
+    """Extend the recipes node's internal graph with a Copy + Premult path so the
+    'Premultiply with Mask' toggle can produce a clean cutout when Create Mask
+    preset is active.
+
+    Graph shape after this:
+        input_image ─┬───────────────────────────────────────────┐
+                     │                                            │
+                     ├─ Copy(rgb=in1, a=in2.red) ─ Premult ──────┐│
+        loader_result┘                                            ││
+                                                                  │├ switch_premult ─ output1
+        loader_before ─┐                                          ││
+                       ├ switch_before_after ────────────────────┘│
+        loader_result ─┘                                           │
+                                                                   │
+    switch_premult.which is bound to `parent.premultiply_with_mask`.
+    """
+    import nuke  # type: ignore
+
+    try:
+        node.begin()
+        input_image = nuke.toNode("input_image")
+        loader_result = nuke.toNode("loader_result")
+        existing_switch = nuke.toNode("switch_before_after")
+        output1 = nuke.toNode("output1")
+        if not all((input_image, loader_result, existing_switch, output1)):
+            return
+
+        # Don't double-build if node was repaired and already has the chain.
+        if nuke.toNode("switch_premult") is not None:
+            return
+
+        # Mask edge softening: Blur smooths the staircase from the model's coarse
+        # binary output; FilterErode at half size pulls the silhouette back in to
+        # compensate for blur expansion, keeping the alpha tight to the named element.
+        # Both controlled by `parent.mask_edge_softness` so size=0 leaves mask as-is.
+        mask_blur = nuke.nodes.Blur(name="mask_blur")
+        mask_blur.setInput(0, loader_result)
+        try:
+            mask_blur.knob("size").setExpression("parent.mask_edge_softness")
+            mask_blur["label"].setValue("AA staircase")
+        except Exception:
+            pass
+
+        mask_erode = nuke.nodes.FilterErode(name="mask_erode")
+        mask_erode.setInput(0, mask_blur)
+        try:
+            mask_erode.knob("size").setExpression("parent.mask_edge_softness * 0.5")
+            mask_erode["label"].setValue("compensate blur expansion")
+        except Exception:
+            pass
+
+        copy_node = nuke.nodes.Copy(name="copy_mask_to_alpha")
+        try:
+            copy_node.knob("from0").setValue("rgba.red")
+            copy_node.knob("to0").setValue("rgba.alpha")
+        except Exception:
+            pass
+        copy_node.setInput(0, input_image)
+        copy_node.setInput(1, mask_erode)
+        try:
+            copy_node["label"].setValue("mask.r → alpha")
+        except Exception:
+            pass
+
+        premult = nuke.nodes.Premult(name="premult_mask")
+        premult.setInput(0, copy_node)
+
+        switch_premult = nuke.nodes.Switch(name="switch_premult")
+        switch_premult.setInput(0, existing_switch)
+        switch_premult.setInput(1, premult)
+        try:
+            switch_premult.knob("which").setExpression("parent.premultiply_with_mask")
+            switch_premult["label"].setValue("0=raw / 1=premultiplied")
+        except Exception:
+            pass
+
+        output1.setInput(0, switch_premult)
+    except Exception as exc:
+        try:
+            nuke.tprint(f"[Bria] Premultiply path build skipped: {exc}")
+        except Exception:
+            pass
+    finally:
+        try:
+            node.end()
+        except Exception:
+            pass
 
 
 def _create_sequence_output_node() -> None:
