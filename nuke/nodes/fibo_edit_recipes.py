@@ -191,8 +191,12 @@ def _obj_fallback_prompt(key: str) -> str:
 # ---------------------------------------------------------------------------
 TARGETED_COMP_PRESETS = frozenset({
     "harmonize_lighting", "match_shadows", "blend_edges", "color_harmonize",
-    "fix_reflections", "integrate_elements", "match_ambient",
+    "fix_reflections", "integrate_elements", "match_ambient", "create_mask",
+    "create_soft_mask", "remove_spill",
 })
+
+# Mask presets that show the Premultiply/Edge Softness controls.
+_MASK_PRESETS = frozenset({"create_mask", "create_soft_mask"})
 
 _COMP_ACTIONS = {
     "harmonize_lighting": {
@@ -229,6 +233,21 @@ _COMP_ACTIONS = {
         "fallback": "Perform a targeted ambient light matching pass on this composite image.",
         "single": "Perform a targeted ambient light matching pass on this composite image, focusing on {elem1}.",
         "multi": "Perform a targeted ambient light matching pass on this composite image, focusing on the following composited elements: {elem_list}.",
+    },
+    "create_mask": {
+        "fallback": "Output a flat-fill rotoscope holdout matte for compositing: render the specified element as a solid white silhouette filled completely on a pure black background, pixel-aligned with the input image. Output is two-tone only \u2014 pure white and pure black, no other colors.",
+        "single": "Output a flat-fill rotoscope holdout matte for compositing: render {elem1} as a solid white silhouette filled completely on a pure black background, pixel-aligned with the input image. Output is two-tone only \u2014 pure white and pure black, no other colors.",
+        "multi": "Output a flat-fill rotoscope holdout matte for compositing: render the following elements as solid white silhouettes filled completely on a pure black background, pixel-aligned with the input image: {elem_list}. Output is two-tone only \u2014 pure white and pure black, no other colors.",
+    },
+    "remove_spill": {
+        "fallback": "Remove all green-screen and blue-screen spill, fringing, and color contamination from the specified element(s), blending them naturally into the surrounding scene.",
+        "single": "Remove all green-screen and blue-screen spill, fringing, and color contamination from {elem1}, blending {elem1} naturally into the surrounding scene.",
+        "multi": "Remove all green-screen and blue-screen spill, fringing, and color contamination from the following elements: {elem_list}. Blend each element naturally into the surrounding scene.",
+    },
+    "create_soft_mask": {
+        "fallback": "Output a grayscale density matte for compositing: render the specified soft element with intermediate gray values mapping its local density across the image, pixel-aligned with the input.",
+        "single": "Output a grayscale density matte for compositing: render {elem1} with intermediate gray values mapping its local density across the image \u2014 pure white where {elem1} is at maximum density, pure black where {elem1} is absent, gray gradients tracking partial density and feathered edges. Pixel-aligned with the input.",
+        "multi": "Output a grayscale density matte for compositing: render the following soft elements with density-mapped gray values, pixel-aligned with the input: {elem_list}. White = maximum density, black = absent, gray = partial density.",
     },
 }
 
@@ -404,6 +423,97 @@ _COMP_BODIES = {
         "Do NOT change the overall exposure or brightness of the image.\n"
         "Result requirement:\n"
         "The output should have consistent ambient illumination across all elements as if they exist in the same environment. If no ambient mismatch is detected, return the image unchanged."
+    ),
+    "remove_spill": (
+        "STRICT LOCKS (non-negotiable):\n"
+        "Do NOT move, warp, scale, rotate, reshape, or reposition the specified element(s) or anything else in the image.\n"
+        "Preserve the specified element(s)' silhouette, pose, position, and scale EXACTLY as they appear in the input image. The output must align pixel-for-pixel with the input.\n"
+        "Do NOT regenerate, redraw, or reinterpret the scene's geometry, layout, or composition.\n"
+        "Do NOT change the background, environment, lighting setup, or other elements that are not affected by green/blue-screen spill.\n"
+        "Do NOT alter materials, textures, or fundamental colors that are NOT spill-related.\n"
+        "Scope of work:\n"
+        "Identify and remove green-screen and blue-screen spill on the specified element(s). Spill is the unwanted color contamination caused by the chroma key environment reflecting onto the subject during the original capture, including:\n"
+        "- green or yellow-green color tint on skin, hair, and edges\n"
+        "- green halos or fringing along the silhouette boundary of the specified element(s)\n"
+        "- green-tinted highlights and reflections on shiny or reflective surfaces (armor, helmets, glass, metal, plastic)\n"
+        "- green color cast on white or light-colored clothing, fabric, hair, and props\n"
+        "- green ambient bounce in shadow regions of the specified element(s)\n"
+        "Apply targeted, localized despill to the specified element(s):\n"
+        "- neutralize unwanted green/blue color casts back to the element's natural color\n"
+        "- restore correct skin tone, hair color, and surface color where spill was present\n"
+        "- clean fringing along the element silhouette to remove green/blue edge contamination\n"
+        "- adjust reflections and highlights so they pick up the surrounding scene's color rather than the original chroma green/blue\n"
+        "CRITICAL RULES:\n"
+        "All edits must be confined to the specified element(s). Do NOT recolor or relight the background or any other elements.\n"
+        "Do NOT remove naturally-occurring green or blue colors (e.g., a green shirt, foliage, signage, sky, or water that is supposed to be green/blue). Only remove green/blue contamination that is clearly chroma-key spill on the specified element(s).\n"
+        "Do NOT shift the specified element(s)' overall color grade beyond what is needed to remove the unwanted spill.\n"
+        "Preserve natural shadows, highlights, material properties, and texture detail on the specified element(s).\n"
+        "Pixel-accurate registration with the input image is mandatory.\n"
+        "Result requirement:\n"
+        "The output should look as if the specified element(s) were originally photographed in the current background environment, with no remaining trace of green-screen or blue-screen color contamination. If no spill is detected on the specified element(s), return the image unchanged."
+    ),
+    "create_mask": (
+        "ALIGNMENT LOCK (highest priority, non-negotiable):\n"
+        "Treat this as a tracing task, not a generation task. The input image is the absolute ground truth for ALL geometry, position, scale, pose, and silhouette boundaries. Your only job is to trace the input.\n"
+        "The output must align PIXEL-FOR-PIXEL with the input image. The dimensions, the specified element(s)' positions, their silhouette outlines, and every edge must match the input exactly.\n"
+        "Do NOT move, warp, scale, rotate, shift, reshape, repose, or reposition the specified element(s) or anything else by even one pixel.\n"
+        "Do NOT regenerate, redraw, reinterpret, restage, or re-imagine any element.\n"
+        "Do NOT apply any creative interpretation \u2014 you are tracing, not creating.\n"
+        "OUTPUT FORMAT (non-negotiable):\n"
+        "This is a ROTOSCOPE HOLDOUT MATTE for compositing \u2014 the kind of flat-fill silhouette a roto artist paints to use as an alpha channel. It is NOT a stylized illustration, line drawing, halftone, or comic-book rendering of the subject.\n"
+        "The output is two-tone: pure white (RGB 255,255,255) inside the silhouette of the named element(s); pure black (RGB 0,0,0) outside. The subject's actual color, texture, and visual appearance must NOT be visible \u2014 only its filled silhouette.\n"
+        "Render the matte at FULL native resolution of the input image with anti-aliased silhouette edges. Edges should be smooth and crisp, not pixel-staircase aliased. Anti-aliasing gradient values are permitted ONLY at the 1-2 pixel boundary where the silhouette meets black; the interior of the silhouette must remain solid pure white.\n"
+        "WHITE pixels: cover the silhouette of the specified element(s) in the input \u2014 edge to edge, fully filled, no interior detail. Treat each named element as one solid filled-in shape, like a paper cutout. NO internal panel lines, NO armor seams, NO shadows, NO line work, NO holes, NO black pixels at all inside the silhouette.\n"
+        "BLACK pixels: everywhere else.\n"
+        "EXCLUDE from the white silhouette \u2014 these MUST remain pure black in the matte even when they overlap, surround, or touch the named element(s):\n"
+        "- atmospheric elements: smoke, fog, dust, haze, mist, vapor, steam\n"
+        "- particles: sparks, embers, debris dust, droplets, splashes, water\n"
+        "- motion blur trails, motion streaks, lens flares, light glows, lens artifacts\n"
+        "- any other transparent or semi-transparent secondary VFX elements\n"
+        "The named element(s) are SOLID PHYSICAL OBJECTS only. If smoke or atmosphere overlaps or wraps around the silhouette of a named element, the smoke must be black and the named element must remain a clean filled silhouette underneath \u2014 do NOT carve notches into the named element where it meets atmospherics.\n"
+        "EDGE BEHAVIOR:\n"
+        "Edges of the white silhouette follow the EXACT outline of the specified element(s) in the input. Sharp by default. 1-2 pixel feather only at boundaries that are genuinely soft in the input (hair, fur, motion blur, atmospheric edges).\n"
+        "Areas of green-screen or blue-screen contamination on the named element(s) are STILL PART OF the named element(s) \u2014 include them as white in the matte. Do NOT exclude spill-affected areas from the silhouette.\n"
+        "EXPLICIT ANTI-PATTERNS \u2014 do NOT do any of these:\n"
+        "Do NOT output the original image with a black background (that is isolation, not masking).\n"
+        "Do NOT output a stylized line drawing, illustration, halftone, or comic-book rendering of the subject.\n"
+        "Do NOT output color, grayscale, or any non-binary values inside the silhouette.\n"
+        "Do NOT add new content, props, environmental details, or speculative geometry.\n"
+        "Result requirement:\n"
+        "The output is a clean flat-fill binary matte aligned pixel-perfectly with the input \u2014 solid white over the silhouette of the specified element(s) at their actual positions in the input, solid black everywhere else, with NO internal detail of any kind. "
+        "If the specified element(s) cannot be identified, return a fully black image of the same dimensions as the input."
+    ),
+    "create_soft_mask": (
+        "ALIGNMENT LOCK (highest priority, non-negotiable):\n"
+        "Treat this as a tracing task, not a generation task. The input image is the absolute ground truth for ALL geometry, position, scale, and density distribution. Your only job is to trace the input.\n"
+        "The output must align PIXEL-FOR-PIXEL with the input image. Every visible feature of the named soft element(s) must be at its EXACT pixel position from the input.\n"
+        "Do NOT move, warp, scale, rotate, shift, or reposition any element by even one pixel.\n"
+        "Do NOT regenerate, redraw, reinterpret, or restage any element.\n"
+        "OUTPUT FORMAT (non-negotiable):\n"
+        "This is a GRAYSCALE DENSITY MATTE for compositing \u2014 the kind of soft alpha matte used for atmospherics (smoke, fire, fog, rain, dust, mist, vapor, splashes) and other semi-transparent VFX elements where each pixel's brightness represents how dense or opaque the named element is at that location.\n"
+        "The output is grayscale: pure black (RGB 0,0,0), pure white (RGB 255,255,255), and the full continuous range of intermediate gray values. It is NOT binary, NOT a hard cutout, NOT an artistic stylization, NOT a line drawing, NOT a comic-book rendering.\n"
+        "The matte is monochromatic \u2014 the subject's color, texture, and visual appearance must NOT be visible in the output, only its density distribution as gray values.\n"
+        "Render the matte at FULL native resolution of the input image with smooth anti-aliased gradients between density levels.\n"
+        "DENSITY MAPPING:\n"
+        "- Pure white: where the named element(s) are at maximum density / fully opaque in the input image\n"
+        "- Pure black: where the named element(s) are completely absent\n"
+        "- Intermediate gray: scales linearly with the local density of the named element(s) \u2014 denser regions are lighter gray approaching white; wispier, sparser, more transparent regions are darker gray approaching black\n"
+        "- Edges and boundaries: smooth gradient falloff matching the natural softness of the named element(s) in the input\n"
+        "INCLUDE in the matte (these get gray-to-white values based on their density in the input):\n"
+        "- The named element(s), at their ACTUAL pixel positions and density distribution from the input\n"
+        "EXCLUDE from the matte \u2014 these MUST be PURE BLACK regardless of where they are or what they overlap:\n"
+        "- Solid physical objects (people, props, vehicles, set pieces, sets, environments) unless explicitly named\n"
+        "- Background, sky, ground, walls, surfaces unless explicitly named\n"
+        "- Any element not in the named list\n"
+        "If a solid object overlaps or is partially occluded by the named soft element, the solid object stays black; only the soft element contributes gray/white density on top of it in the matte.\n"
+        "CRITICAL RULES:\n"
+        "Pixel-accurate registration with the input image is mandatory. Output dimensions and density positions must match the input exactly.\n"
+        "Do NOT add new content, atmospherics, or VFX not present in the input.\n"
+        "Do NOT shift the position, scale, shape, or density distribution of the named element(s).\n"
+        "Do NOT introduce color, hue tints, or non-grayscale values \u2014 the output is monochromatic gray only.\n"
+        "Result requirement:\n"
+        "The output is a smooth grayscale density matte aligned pixel-perfectly with the input \u2014 white where the named element(s) are most dense, black where they are absent or where solid non-named objects exist, gray gradients faithfully tracking partial density. Usable directly as an alpha channel for compositing the soft element(s) into a new scene with proper transparency falloff. "
+        "If the specified element(s) cannot be identified, return a fully black image of the same dimensions as the input."
     ),
 }
 
@@ -756,6 +866,9 @@ PRESET_CATEGORIES = {
         ("fix_reflections", "Fix Reflections", _comp_fallback_prompt("fix_reflections")),
         ("integrate_elements", "Integrate Elements", _comp_fallback_prompt("integrate_elements")),
         ("match_ambient", "Match Ambient Light", _comp_fallback_prompt("match_ambient")),
+        ("create_mask", "Create Mask", _comp_fallback_prompt("create_mask")),
+        ("create_soft_mask", "Create Soft Mask", _comp_fallback_prompt("create_soft_mask")),
+        ("remove_spill", "Remove Greenscreen Spill", _comp_fallback_prompt("remove_spill")),
         ("depth_consistency", "Depth Consistency",
          "Perform a targeted depth consistency pass on this composite image.\n"
          "STRICT LOCKS (non-negotiable):\n"
