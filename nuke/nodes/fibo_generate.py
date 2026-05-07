@@ -13,7 +13,7 @@ import nuke  # type: ignore
 from adapter import fibo_generate_from_payload
 from bria_core.config import load_config, resolve_api_endpoint
 from bria_core.errors import BriaConfigError, BriaRequestError
-from bria_core.utils import download_url, extract_image_url, normalize_aspect_ratio as _normalize_aspect_ratio, png_ihdr_info, resolve_proxies
+from bria_core.utils import download_url, extract_image_url, extract_image_urls, normalize_aspect_ratio as _normalize_aspect_ratio, png_ihdr_info, resolve_proxies
 from common import (
     is_batch_mode as _is_batch_mode,
     append_generation_history as _append_generation_history,
@@ -261,6 +261,103 @@ def sync_preview(node: Any = None) -> None:
     _sync_group_preview(node)
 
 
+def _variant_path_for(result_path: str, variant_idx: int) -> Optional[str]:
+    """Compute the path to variant N given the canonical result_path.
+
+    After a multi-variant run, result_path holds the v01 file (e.g. `foo_v01.png`).
+    We strip the trailing `_vNN` suffix, then re-append `_v{idx:02d}`.
+    For idx=1, also accept the legacy single-variant filename (no suffix).
+    """
+    if not result_path:
+        return None
+    root, ext = os.path.splitext(result_path)
+    m = re.match(r"^(.*)_v\d{2}$", root)
+    base = m.group(1) if m else root
+    if variant_idx <= 1:
+        candidate_v01 = f"{base}_v01{ext}"
+        if os.path.isfile(candidate_v01):
+            return candidate_v01
+        return f"{base}{ext}"
+    return f"{base}_v{variant_idx:02d}{ext}"
+
+
+def _apply_multiple_images_visibility(node: Any) -> None:
+    """Show/hide the entire multi-image control block (num_images + slider + button)
+    based on the use_multiple_images toggle. Visibility is tied to the toggle alone
+    so the user sees the controls exist even before running."""
+    use_multi = bool(_opt_parm_bool(node, "use_multiple_images"))
+    for name in ("num_images", "result_variant", "use_this_image"):
+        try:
+            k = node.knob(name)
+            if k is not None:
+                k.setVisible(use_multi)
+        except Exception:
+            pass
+
+
+def _read_variant_idx(node: Any) -> int:
+    """Read the Image Index slider value as an int (rounded), clamped to [1, count].
+
+    Nuke's Double_Knob slider does not constrain typed values to setRange — a user
+    can type 7 even when the slider visually goes 1..3. We enforce the bound here
+    by reading the hidden result_variant_count knob (set after each successful run).
+    """
+    try:
+        knob = node.knob("result_variant")
+        if knob is None:
+            return 1
+        raw = knob.value()
+        if raw is None:
+            return 1
+        idx = int(round(float(raw)))
+    except (TypeError, ValueError):
+        idx = 1
+    try:
+        count_knob = node.knob("result_variant_count")
+        max_count = int(count_knob.value()) if count_knob is not None else 1
+    except (TypeError, ValueError):
+        max_count = 1
+    if max_count < 1:
+        max_count = 1
+    return max(1, min(idx, max_count))
+
+
+def _apply_result_variant(node: Any) -> None:
+    """When the Image Index slider moves, swap loader_result to the selected variant."""
+    variant_idx = _read_variant_idx(node)
+    result_path = _opt_parm_str(node, "result_path") or ""
+    target = _variant_path_for(result_path, variant_idx)
+    if target and os.path.isfile(target):
+        try:
+            _set_internal_read_file(node, "loader_result", target)
+            _set_knob_value_safe(node, "output_view", "After")
+        except Exception:
+            pass
+
+
+def on_use_this_image() -> None:
+    """Promote the currently-displayed variant to be the canonical result_path."""
+    try:
+        node = nuke.thisNode()
+    except Exception:
+        return
+    if node is None:
+        return
+    variant_idx = _read_variant_idx(node)
+    result_path = _opt_parm_str(node, "result_path") or ""
+    target = _variant_path_for(result_path, variant_idx)
+    if not target or not os.path.isfile(target):
+        nuke.message(
+            f"Variant {variant_idx} not found on disk.\n\n"
+            f"Looked for: {target or '<no path>'}"
+        )
+        return
+    _set_result_path(node, target)
+    _set_internal_read_file(node, "loader_result", target)
+    _set_knob_value_safe(node, "output_view", "After")
+    nuke.tprint(f"[Bria] Locked in variant {variant_idx}: {target}")
+
+
 def on_knob_changed() -> None:
     try:
         node = nuke.thisNode()
@@ -325,6 +422,14 @@ def on_knob_changed() -> None:
         _sync_group_preview(node)
         return
 
+    if knob_name == "use_multiple_images":
+        _apply_multiple_images_visibility(node)
+        return
+
+    if knob_name == "result_variant":
+        _apply_result_variant(node)
+        return
+
     if knob_name in {"result_path", "use_global_project_path", "preset_path", "load_presets_from_examples"}:
         _sync_group_preview(node)
         _ensure_generation_preset_ui(node)
@@ -363,6 +468,18 @@ def fibo_generate_bria(node: Any) -> None:
         tailored_model_influence = _opt_parm_float(node, "tailored_model_influence")
         sync = _opt_parm_bool(node, "sync")
 
+        # Multi-image generation: only active when the use_multiple_images toggle is on.
+        # When off, num_images = 1 regardless of what the (hidden) dropdown holds.
+        use_multiple_images = bool(_opt_parm_bool(node, "use_multiple_images"))
+        if use_multiple_images:
+            num_images_str = _opt_parm_menu_str(node, "num_images") or "2"
+            try:
+                num_images = max(2, min(4, int(num_images_str)))
+            except (TypeError, ValueError):
+                num_images = 2
+        else:
+            num_images = 1
+
         # 4MP generation requires async processing; override sync knob.
         if resolution == "4MP":
             sync = False
@@ -400,6 +517,8 @@ def fibo_generate_bria(node: Any) -> None:
                 payload["steps_num"] = int(steps_num)
         if sync is not None:
             payload["sync"] = bool(sync)
+        if num_images > 1:
+            payload["num_results"] = num_images
 
         if pipeline.strip().lower() == "tailored":
             if not tailored_model_id:
@@ -437,34 +556,119 @@ def fibo_generate_bria(node: Any) -> None:
 
         if resolution == "4MP":
             _update_progress(progress, "Generating (4MP, async — may take ~30s)...", 25)
-        data = fibo_generate_from_payload(
-            payload=payload,
-            pipeline=pipeline,
-            use_structured_prompt=use_structured,
-            api_key=None,
-            api_endpoint=None,
-            use_bearer=use_bearer_auth,
-            proxies=proxies,
-            session=None,
-        )
-        _update_progress(progress, "Downloading result image...", 70)
-
-        dl_url = extract_image_url(data)
-        if not dl_url:
-            raise BriaRequestError(f"Unexpected API response (no image_url): {data}")
 
         t_dl_start = time.perf_counter()
-        img_bytes, content_type = download_url(dl_url, timeout_s=300, proxies=proxies)
+
+        # Multi-image generation: Bria's /v2/image/generate endpoint returns ONE image
+        # per call regardless of any batch field (confirmed empirically 2026-05-05).
+        # Per Bria's documented batch pattern, fire N parallel async calls, each
+        # returning a unique request_id; the BriaClient handles status_url polling.
+        # Per-variant seed offset gives actual variety when the user has set a seed.
+        if num_images > 1:
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+
+            base_payload = dict(payload)
+            base_payload["sync"] = False  # async pattern: each call returns a status_url
+            base_seed = int(base_payload.get("seed") or 0)
+
+            def _one_variant(variant_idx: int) -> tuple:
+                per_payload = dict(base_payload)
+                if base_seed > 0:
+                    # Vary seed per call so variants are actually different.
+                    per_payload["seed"] = base_seed + (variant_idx - 1)
+                resp = fibo_generate_from_payload(
+                    payload=per_payload,
+                    pipeline=pipeline,
+                    use_structured_prompt=use_structured,
+                    api_key=None,
+                    api_endpoint=None,
+                    use_bearer=use_bearer_auth,
+                    proxies=proxies,
+                    session=None,
+                )
+                urls = extract_image_urls(resp)
+                if not urls:
+                    raise BriaRequestError(
+                        f"Variant {variant_idx}: API returned no image_url. Response: {resp}"
+                    )
+                img_bytes, content_type = download_url(urls[0], timeout_s=300, proxies=proxies)
+                base_save_path = _resolve_result_save_path(out_path, content_type)
+                base_save_path = _timestamp_result_path(base_save_path, run_id)
+                root, ext = os.path.splitext(base_save_path)
+                variant_save_path = f"{root}_v{variant_idx:02d}{ext}"
+                _ensure_parent_dir(variant_save_path)
+                with open(variant_save_path, "wb") as f:
+                    f.write(img_bytes)
+                if not os.path.exists(variant_save_path) or os.path.getsize(variant_save_path) <= 0:
+                    raise RuntimeError(f"Variant {variant_idx}: empty file at {variant_save_path}")
+                return variant_idx, variant_save_path, content_type, resp
+
+            _update_progress(
+                progress, f"Generating {num_images} variants in parallel...", 30
+            )
+
+            results_by_idx: dict = {}
+            errors: list = []
+            completed = 0
+            with ThreadPoolExecutor(max_workers=num_images) as executor:
+                futures = {
+                    executor.submit(_one_variant, i): i for i in range(1, num_images + 1)
+                }
+                for fut in as_completed(futures):
+                    variant_idx = futures[fut]
+                    try:
+                        idx, vpath, ctype, vresp = fut.result()
+                        results_by_idx[idx] = (vpath, ctype, vresp)
+                    except Exception as exc:
+                        errors.append((variant_idx, exc))
+                    completed += 1
+                    _update_progress(
+                        progress,
+                        f"Variant {completed}/{num_images} done",
+                        30 + int(55 * completed / num_images),
+                    )
+
+            if not results_by_idx:
+                # Every variant failed
+                first_err = errors[0][1] if errors else RuntimeError("All variants failed")
+                raise first_err
+
+            sorted_keys = sorted(results_by_idx.keys())
+            result_paths = [results_by_idx[k][0] for k in sorted_keys]
+            save_path = result_paths[0]
+            content_type = results_by_idx[sorted_keys[0]][1]
+            data = results_by_idx[sorted_keys[0]][2]
+
+            if errors:
+                err_summary = ", ".join(f"v{i:02d}: {e}" for i, e in errors)
+                nuke.tprint(f"[Bria] Some variants failed: {err_summary}")
+        else:
+            # Single-image path: one call, one save (no _vNN suffix for backward compat).
+            data = fibo_generate_from_payload(
+                payload=payload,
+                pipeline=pipeline,
+                use_structured_prompt=use_structured,
+                api_key=None,
+                api_endpoint=None,
+                use_bearer=use_bearer_auth,
+                proxies=proxies,
+                session=None,
+            )
+            _update_progress(progress, "Downloading result image...", 70)
+            dl_urls = extract_image_urls(data)
+            if not dl_urls:
+                raise BriaRequestError(f"Unexpected API response (no image_url): {data}")
+            img_bytes, content_type = download_url(dl_urls[0], timeout_s=300, proxies=proxies)
+            save_path = _resolve_result_save_path(out_path, content_type)
+            save_path = _timestamp_result_path(save_path, run_id)
+            _ensure_parent_dir(save_path)
+            with open(save_path, "wb") as f:
+                f.write(img_bytes)
+            if not os.path.exists(save_path) or os.path.getsize(save_path) <= 0:
+                raise RuntimeError(f"Bria download produced an empty file: {save_path}")
+            result_paths = [save_path]
+
         t_dl_end = time.perf_counter()
-
-        save_path = _resolve_result_save_path(out_path, content_type)
-        save_path = _timestamp_result_path(save_path, run_id)
-        _ensure_parent_dir(save_path)
-        with open(save_path, "wb") as f:
-            f.write(img_bytes)
-
-        if not os.path.exists(save_path) or os.path.getsize(save_path) <= 0:
-            raise RuntimeError(f"Bria download produced an empty file: {save_path}")
 
         def _apply_success_ui() -> None:
             try:
@@ -478,6 +682,7 @@ def fibo_generate_bria(node: Any) -> None:
                         "operation": "fibo_generate",
                         "endpoint": resolve_api_endpoint(cfg),
                         "result_path": save_path,
+                        "result_paths": list(result_paths),
                         "response": data,
                         "settings": {
                             "pipeline": pipeline,
@@ -493,6 +698,7 @@ def fibo_generate_bria(node: Any) -> None:
                             "structured_prompt": payload.get("structured_prompt"),
                             "tailored_model_id": payload.get("tailored_model_id"),
                             "tailored_model_influence": payload.get("tailored_model_influence"),
+                            "num_images": num_images,
                         },
                     },
                 )
@@ -503,6 +709,7 @@ def fibo_generate_bria(node: Any) -> None:
                         "operation": "fibo_generate",
                         "endpoint": resolve_api_endpoint(cfg),
                         "result_path": save_path,
+                        "result_paths": list(result_paths),
                         "response": data,
                         "settings": {
                             "pipeline": pipeline,
@@ -518,6 +725,7 @@ def fibo_generate_bria(node: Any) -> None:
                             "structured_prompt": payload.get("structured_prompt"),
                             "tailored_model_id": payload.get("tailored_model_id"),
                             "tailored_model_influence": payload.get("tailored_model_influence"),
+                            "num_images": num_images,
                         },
                     },
                 )
@@ -525,6 +733,34 @@ def fibo_generate_bria(node: Any) -> None:
                 _set_result_path(node, save_path)
                 _set_knob_value_safe(node, "output_view", "After")
                 _sync_group_preview_explicit(node, save_path, "After")
+
+                # Update the Image Index slider range to match the ACTUAL number of
+                # variants saved. Visibility is owned by the toggle handler — we DO NOT
+                # touch it here. Bria's /v2/image/generate may quietly cap num_results,
+                # so we log what came back.
+                actual_count = len(result_paths)
+                if use_multiple_images:
+                    nuke.tprint(f"[Bria] Saved {actual_count} variant(s) to disk")
+                    if actual_count != num_images:
+                        nuke.tprint(
+                            f"[Bria] Requested {num_images} variants but API returned "
+                            f"{actual_count}. The /image/generate endpoint may not "
+                            f"honor num_results > 1 for this pipeline."
+                        )
+                try:
+                    variant_knob = node.knob("result_variant")
+                    if variant_knob is not None:
+                        variant_knob.setRange(1, max(actual_count, 1))
+                        variant_knob.setValue(1)
+                    count_knob = node.knob("result_variant_count")
+                    if count_knob is not None:
+                        count_knob.setValue(str(actual_count))
+                    # Re-apply toggle-driven visibility so the slider/button are shown
+                    # whenever the toggle is on, regardless of how many came back.
+                    _apply_multiple_images_visibility(node)
+                except Exception:
+                    pass
+
                 _set_status(node, "done")
             except Exception as exc:
                 _set_history_debug(node, f"success ui failed: {exc}")

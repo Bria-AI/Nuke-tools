@@ -2279,6 +2279,70 @@ def _create_fibo_generate_node() -> None:
     _add_knob(nuke.Int_Knob("seed", "Seed"))
     _add_knob(nuke.Int_Knob("guidance_scale", "Guidance Scale"))
     _add_knob(nuke.Int_Knob("steps_num", "Steps"))
+    # "Generate Multiple Images" — toggle that gates a 4-control block. All 4
+    # appear together when the toggle is ON; the slider's range and the button's
+    # behavior become meaningful once a multi-variant run completes.
+    #   1. use_multiple_images (this toggle, always visible)
+    #   2. num_images dropdown (visible when toggle is on)
+    #   3. result_variant slider (visible when toggle is on)
+    #   4. use_this_image button (visible when toggle is on)
+    use_multiple_knob = nuke.Boolean_Knob(
+        "use_multiple_images", "Generate Multiple Images", False
+    )
+    try:
+        use_multiple_knob.setTooltip(
+            "Generate 2-4 variants per click. After Run, drag Image Index to preview them; "
+            "click 'Use This Image' to lock in the one you want."
+        )
+        use_multiple_knob.setFlag(nuke.STARTLINE)
+    except Exception:
+        pass
+    _add_knob(use_multiple_knob)
+    # num_images cap of 4 mirrors the proven Background Replace HDA precedent
+    # (the only Bria endpoint we have empirically validated num_results > 1 against).
+    num_images_knob = nuke.Enumeration_Knob("num_images", "Num Images", ["2", "3", "4"])
+    try:
+        num_images_knob.setTooltip(
+            "Number of variants to generate per call (2-4). All variants are saved to disk."
+        )
+        num_images_knob.setVisible(False)
+    except Exception:
+        pass
+    _add_knob(num_images_knob)
+    # Image Index — Double_Knob renders as a real slider in Nuke 17 (Int_Knob does not,
+    # even with setRange + nuke.SLIDER flag). Slider range is set dynamically per-run
+    # to match the ACTUAL variants saved. Value is read with int(round(...)).
+    result_variant_knob = nuke.Double_Knob("result_variant", "Image Index")
+    try:
+        result_variant_knob.setRange(1, 4)
+        result_variant_knob.setValue(1)
+        result_variant_knob.setVisible(False)
+        result_variant_knob.setTooltip(
+            "Drag to preview each variant from the most recent multi-image run. "
+            "Click 'Use This Image' to lock in the selected variant."
+        )
+    except Exception:
+        pass
+    _add_knob(result_variant_knob)
+    use_this_image_knob = nuke.PyScript_Knob(
+        "use_this_image",
+        "Use This Image",
+        "import importlib, fibo_generate as _bria_fg; importlib.reload(_bria_fg); _bria_fg.on_use_this_image()",
+    )
+    try:
+        use_this_image_knob.setVisible(False)
+        use_this_image_knob.setTooltip(
+            "Promote the currently-displayed variant to the canonical Result Path."
+        )
+    except Exception:
+        pass
+    _add_knob(use_this_image_knob)
+    variant_count_knob = nuke.String_Knob("result_variant_count", "_variant_count", "1")
+    _add_knob(variant_count_knob)
+    try:
+        variant_count_knob.setVisible(False)
+    except Exception:
+        pass
     _add_knob(nuke.Text_Knob("prompt_sep", "", ""))
     _add_knob(nuke.Multiline_Eval_String_Knob("prompt", "Prompt"))
 
@@ -2539,9 +2603,12 @@ def _create_fibo_generate_node() -> None:
         pass
 
     # Keep optional prompt/model controls tidy when knobs change.
+    # importlib.reload mirrors the gizmo file's pattern so subsequent code edits
+    # are picked up without requiring a Nuke restart.
     try:
         node.knob("knobChanged").setValue(
-            "import fibo_generate as _bria_fg; _bria_fg.on_knob_changed()"
+            "import importlib, fibo_generate as _bria_fg; "
+            "importlib.reload(_bria_fg); _bria_fg.on_knob_changed()"
         )
     except Exception:
         pass
