@@ -116,28 +116,61 @@ def resolve_proxies(
 
 
 def extract_image_url(data: dict) -> str | None:
+    urls = extract_image_urls(data)
+    return urls[0] if urls else None
+
+
+def extract_image_urls(data: dict) -> list[str]:
+    """Return every image URL the API response contains, in order.
+
+    Handles a few shapes Bria's endpoints have used:
+      - {"result": {"image_url": "..."}}                       (single, FIBO Generate sync)
+      - {"result": {"images": ["url1", "url2"]}}              (multi as list of strings)
+      - {"result": {"images": [{"image_url": "..."}, ...]}}   (multi as list of dicts)
+      - {"result": [{"image_url": "..."}, ...]}               (result as list of dicts)
+      - {"image_url": "..."}                                    (top-level)
+      - {"images": [...]}                                       (top-level array)
+    """
     if not isinstance(data, dict):
-        return None
+        return []
+
+    seen: set[str] = set()
+    out: list[str] = []
+
+    def _add(value: object) -> None:
+        if isinstance(value, str):
+            v = value.strip()
+            if v and v not in seen:
+                seen.add(v)
+                out.append(v)
+
+    def _walk_image_dict(obj: object) -> None:
+        if isinstance(obj, dict):
+            for key in ("image_url", "url", "imageUrl"):
+                _add(obj.get(key))
+
+    def _walk_image_list(items: object) -> None:
+        if isinstance(items, list):
+            for item in items:
+                if isinstance(item, str):
+                    _add(item)
+                elif isinstance(item, dict):
+                    _walk_image_dict(item)
+
     result = data.get("result")
     if isinstance(result, dict):
-        url = result.get("image_url")
-        if isinstance(url, str) and url.strip():
-            return url.strip()
+        _walk_image_dict(result)
+        _walk_image_list(result.get("images"))
+        _walk_image_list(result.get("results"))
+    elif isinstance(result, list):
+        _walk_image_list(result)
 
-        images = result.get("images")
-        if isinstance(images, list) and images:
-            first = images[0]
-            if isinstance(first, str) and first.strip():
-                return first.strip()
-            if isinstance(first, dict):
-                first_url = first.get("image_url")
-                if isinstance(first_url, str) and first_url.strip():
-                    return first_url.strip()
+    # Top-level fallbacks
+    _walk_image_dict(data)
+    _walk_image_list(data.get("images"))
+    _walk_image_list(data.get("results"))
 
-    url_top = data.get("image_url")
-    if isinstance(url_top, str) and url_top.strip():
-        return url_top.strip()
-    return None
+    return out
 
 
 def png_ihdr_info(path: str) -> dict | None:
