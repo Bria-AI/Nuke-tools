@@ -53,6 +53,10 @@ TARGETED_OBJECT_PRESETS = frozenset({
     "change_object_material", "isolate_object",
 })
 
+# Presets whose action templates do NOT reference {mod1} — modifier is optional.
+# Multi-target action template uses {obj_list} (just names) instead of {obj_mod_list}.
+_PRESETS_WITHOUT_MOD = frozenset({"delete_object", "isolate_object"})
+
 _OBJ_ACTIONS = {
     "delete_object": {
         "fallback": "Delete the specified object from the scene.",
@@ -840,6 +844,129 @@ def _collect_object_targets(node: Any) -> List[Tuple[str, str]]:
     return targets
 
 
+def _join_natural(items: List[str]) -> Optional[str]:
+    """Join with natural English: 'a', 'a and b', 'a, b, and c'."""
+    items = [s for s in items if s]
+    if not items:
+        return None
+    if len(items) == 1:
+        return items[0]
+    if len(items) == 2:
+        return f"{items[0]} and {items[1]}"
+    return ", ".join(items[:-1]) + f", and {items[-1]}"
+
+
+def _possessive(name: str) -> str:
+    """English possessive: cat -> cat's, cats -> cats'."""
+    return f"{name}'" if name.endswith("s") else f"{name}'s"
+
+
+def _format_object_phrase(targets: List[Tuple[str, str]]) -> Optional[str]:
+    return _join_natural([name for name, _ in targets if name])
+
+
+def _format_object_possessive(targets: List[Tuple[str, str]]) -> Optional[str]:
+    return _join_natural([_possessive(name) for name, _ in targets if name])
+
+
+def _format_modifier_phrase(targets: List[Tuple[str, str]]) -> Optional[str]:
+    return _join_natural([mod for _, mod in targets if mod])
+
+
+# Phrase tables: each (needle, possessive?) pair is a placeholder we look for in
+# body text. Possessive needles are replaced with the possessive form of the
+# object phrase; non-possessive with the bare phrase. Order matters — longer
+# needles must come first so they match before any shorter substring of them.
+_OBJ_POSSESSIVE_NEEDLES = (
+    "the specified object(s)'",
+    "the specified objects'",
+    "the specified object's",
+    "specified object(s)'",
+    "specified objects'",
+    "specified object's",
+    "the specified element(s)'",
+    "the specified elements'",
+    "the specified element's",
+    "specified element(s)'",
+    "specified elements'",
+    "specified element's",
+)
+_OBJ_NEEDLES = (
+    "the specified object(s)",
+    "the specified objects",
+    "the specified object",
+    "The specified object(s)",
+    "The specified objects",
+    "The specified object",
+    "the isolated object(s)",
+    "the isolated objects",
+    "the isolated object",
+    "specified object(s)",
+    "specified objects",
+    "specified object",
+    "the specified element(s)",
+    "the specified elements",
+    "the specified element",
+    "The specified element(s)",
+    "The specified elements",
+    "The specified element",
+    "specified element(s)",
+    "specified elements",
+    "specified element",
+)
+
+_MOD_NEEDLES_BY_PRESET = {
+    "replace_object": (
+        "the described replacement(s)",
+        "the described replacement",
+        "the replacement object(s)",
+        "the replacement(s)",
+        "the replacement",
+    ),
+    "change_object_color": (
+        "the described target color(s)",
+        "the described target color",
+        "the target color(s)",
+        "the new color(s)",
+        "the new color",
+        "the target color",
+    ),
+    "change_object_material": (
+        "the described target material(s)",
+        "the described target material",
+        "the target material(s)",
+        "the new material(s)",
+        "the new material",
+        "the target material",
+    ),
+}
+
+
+def _substitute_body(body: str, preset_key: str, targets: List[Tuple[str, str]]) -> str:
+    """Replace generic 'specified object(s)' / replacement / target color phrases in
+    the body text with the user's actual object names and modifiers.
+
+    Without this, the long body keeps saying 'the specified object(s)' even after
+    the user has named a target — the model gets ambiguous targeting and tends to
+    return generic results regardless of the named object.
+    """
+    obj_phrase = _format_object_phrase(targets)
+    obj_poss = _format_object_possessive(targets)
+    mod_phrase = _format_modifier_phrase(targets)
+
+    if obj_phrase:
+        for needle in _OBJ_POSSESSIVE_NEEDLES:
+            body = body.replace(needle, obj_poss or obj_phrase)
+        for needle in _OBJ_NEEDLES:
+            body = body.replace(needle, obj_phrase)
+
+    if mod_phrase:
+        for needle in _MOD_NEEDLES_BY_PRESET.get(preset_key, ()):
+            body = body.replace(needle, mod_phrase)
+
+    return body
+
+
 def _build_object_prompt(preset_key: str, targets: List[Tuple[str, str]]) -> Optional[str]:
     if preset_key not in TARGETED_OBJECT_PRESETS or not targets:
         return None
@@ -852,10 +979,11 @@ def _build_object_prompt(preset_key: str, targets: List[Tuple[str, str]]) -> Opt
         action = actions["single"].replace("{obj1}", obj1)
         if mod1:
             action = action.replace("{mod1}", mod1)
-        elif preset_key != "delete_object":
+        elif preset_key not in _PRESETS_WITHOUT_MOD:
+            # replace/color/material need a modifier; isolate/delete don't.
             return None
     else:
-        if preset_key == "delete_object":
+        if preset_key in _PRESETS_WITHOUT_MOD:
             obj_list = ", ".join(name for name, _ in targets)
             action = actions["multi"].replace("{obj_list}", obj_list)
         else:
@@ -868,6 +996,7 @@ def _build_object_prompt(preset_key: str, targets: List[Tuple[str, str]]) -> Opt
             obj_mod_list = "; ".join(pairs)
             action = actions["multi"].replace("{obj_mod_list}", obj_mod_list)
 
+    body = _substitute_body(body, preset_key, targets)
     return action + "\n" + body
 
 
@@ -890,9 +1019,13 @@ def _build_comp_prompt(preset_key: str, elements: List[str]) -> Optional[str]:
     if len(elements) == 1:
         action = actions["single"].replace("{elem1}", elements[0])
     else:
-        elem_list = ", ".join(elements)
+        elem_list = _join_natural(elements) or ", ".join(elements)
         action = actions["multi"].replace("{elem_list}", elem_list)
 
+    # Substitute generic "specified element(s)" / "specified object(s)" patterns
+    # in the body too. Existing comp presets (harmonize_lighting etc.) don't use
+    # these phrases, so this is a no-op for them; create_mask relies on it.
+    body = _substitute_body(body, preset_key, [(e, "") for e in elements])
     return action + "\n" + body
 
 
