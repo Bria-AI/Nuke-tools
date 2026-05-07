@@ -468,9 +468,13 @@ def upscale_from_files(
         session=session,
     )
 
+    # As of 2026-05, /v2/image/edit/enhance returns 422 for sync=true ("sync request is not
+    # supported with this endpoint"). BriaClient._poll_status handles async responses, so
+    # default Enhance to sync=False. Other modes (increase_resolution) retain the prior default.
+    default_sync = False if endpoint_name == "enhance" else True
     payload: Dict[str, object] = {
         "image": file_to_base64(image_path),
-        "sync": True if sync is None else bool(sync),
+        "sync": default_sync if sync is None else bool(sync),
     }
 
     if seed is not None:

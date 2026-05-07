@@ -536,12 +536,9 @@ def enhance_bria(node: Any) -> None:
 
         resolution = (_opt_parm_menu_str(node, "resolution") or "2MP").strip()
         seed = _opt_parm_int(node, "seed")
-        sync = True
-        if _opt_parm_bool(node, "sync") is False:
-            _debug_log(
-                "Enhance sync disabled on node; forcing sync=True because async polling is not implemented."
-            )
-            _on_main_thread(lambda: node.knob("sync").setValue(True) if node.knob("sync") is not None else None)
+        # Bria /v2/image/edit/enhance no longer accepts sync=true (returns 422 since 2026-05).
+        # BriaClient._poll_status handles the async response transparently, so always send False.
+        sync = False
 
         cfg = load_config()
         out_path = _resolve_output_path(node, cfg, run_id, "enhance")
