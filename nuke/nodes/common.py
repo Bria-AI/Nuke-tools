@@ -352,6 +352,66 @@ def _default_temp_bria_dir(subdir: str) -> str:
     return str(path)
 
 
+def _default_output_dir(subdir: str) -> str:
+    """Return the default output directory when no global project path or
+    explicit ``result_path`` is set. Mirrors the priority chain in the Bria
+    Houdini integration (``bria_houdini/node_utils.py:resolve_output_dir``):
+
+    1. Current Nuke script directory + ``/bria_output/<subdir>/`` (analog of
+       Houdini's ``$HIP/bria_output/``).
+    2. ``~/Desktop/bria_nuke_tool_output/<subdir>/``.
+    3. ``~/.bria/cache/<script_name>/<subdir>/`` (last resort if Desktop is
+       absent — still persistent, never the OS temp directory).
+
+    Used so saved Read-node references survive across days. Input staging
+    still uses :func:`_default_temp_bria_dir` because inputs are ephemeral.
+    """
+    subdir_clean = str(subdir or "").strip()
+
+    # 1. Script directory (Nuke equivalent of $HIP). Only when the .nk file
+    #    has been saved at least once.
+    try:
+        script_path = str(nuke.root().knob("name").value() or "").strip()
+    except Exception:
+        script_path = ""
+    if script_path:
+        try:
+            script_dir = Path(os.path.expandvars(os.path.expanduser(script_path))).parent
+            if script_dir.is_dir():
+                path = script_dir / "bria_output" / subdir_clean
+                path.mkdir(parents=True, exist_ok=True)
+                return str(path)
+        except Exception:
+            pass
+
+    # 2. Desktop. ``XDG_DESKTOP_DIR`` on Linux distros that follow XDG,
+    #    otherwise ``~/Desktop`` (present on macOS and Windows by default).
+    desktop = os.environ.get("XDG_DESKTOP_DIR", "").strip()
+    if not desktop or not os.path.isdir(desktop):
+        desktop = os.path.join(os.path.expanduser("~"), "Desktop")
+    if os.path.isdir(desktop):
+        try:
+            path = Path(desktop) / "bria_nuke_tool_output" / subdir_clean
+            path.mkdir(parents=True, exist_ok=True)
+            return str(path)
+        except Exception:
+            pass
+
+    # 3. ``~/.bria/cache/<script>/`` — last resort if Desktop doesn't exist
+    #    (unusual). Still persistent, never the OS temp dir.
+    script_name = "untitled"
+    if script_path:
+        try:
+            stem = Path(script_path).stem.strip()
+            if stem:
+                script_name = stem
+        except Exception:
+            pass
+    path = Path.home() / ".bria" / "cache" / script_name / subdir_clean
+    path.mkdir(parents=True, exist_ok=True)
+    return str(path)
+
+
 def resolve_input_temp_dir(prefix: str) -> str:
     """Return (and create) a Bria-namespaced temp subdirectory for ephemeral node input files."""
     return _default_temp_bria_dir(os.path.join("inputs", str(prefix or "node")))
@@ -1410,8 +1470,8 @@ def resolve_output_path(node: Any, cfg: Any, run_id: str, result_prefix: str) ->
         explicit_dir.mkdir(parents=True, exist_ok=True)
         return str(explicit_dir / file_name)
 
-    temp_dir = _default_temp_bria_dir(os.path.join("images", image_subdir))
-    out_path = os.path.join(temp_dir, file_name)
+    cache_dir = _default_output_dir(os.path.join("images", image_subdir))
+    out_path = os.path.join(cache_dir, file_name)
     _ensure_parent_dir(out_path)
     return out_path
 

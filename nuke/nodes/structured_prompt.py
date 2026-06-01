@@ -21,6 +21,7 @@ from bria_core.utils import resolve_proxies
 from common import (
     is_batch_mode as _is_batch_mode,
     _resolved_saved_path as _common_resolved_saved_path,
+    _default_output_dir as _default_output_dir,
     append_generation_history as _append_generation_history,
     create_progress_task as _create_progress_task,
     ensure_generation_history_ui as _ensure_generation_history_ui,
@@ -223,17 +224,33 @@ def _resolve_structured_prompt_output_path(node: Any, cfg: Any, run_id: str) -> 
             prompt_dir = p
     else:
         use_global_knob = bool(_opt_parm_bool(node, "use_global_project_path"))
-        env_use_global = str(os.getenv("USE_BRIA_PROJECT_PATH") or "").strip().lower() in {"1", "true", "yes", "on"}
-        cfg_use_global = bool(getattr(cfg, "use_bria_project_path", False))
+        prompt_dir = None
 
-        if use_global_knob and (env_use_global or cfg_use_global):
-            global_root = str(os.getenv("BRIA_PROJECT_PATH") or getattr(cfg, "nuke_output_dir", "") or "").strip()
+        # Per-node knob is the source of truth — mirrors resolve_output_path
+        # in common.py. The earlier AND-gate produced silent temp fallbacks
+        # when env/cfg were unset, breaking persistence of saved .nk files.
+        if use_global_knob:
+            global_root = str(
+                os.getenv("BRIA_PROJECT_PATH") or getattr(cfg, "nuke_output_dir", "") or ""
+            ).strip()
             if global_root:
                 prompt_dir = Path(os.path.expandvars(os.path.expanduser(global_root))) / "prompt"
             else:
-                prompt_dir = Path(resolve_temp_dir(nuke)) / "bria" / "prompt"
-        else:
-            prompt_dir = Path(resolve_temp_dir(nuke)) / "bria" / "prompt"
+                try:
+                    node_name = node.name()
+                except Exception:
+                    node_name = "<unknown>"
+                try:
+                    nuke.tprint(
+                        f"[Bria] '{node_name}' has use_global_project_path=ON but no "
+                        f"BRIA_PROJECT_PATH env or cfg.nuke_output_dir is set — falling "
+                        f"back to script-dir / Desktop default"
+                    )
+                except Exception:
+                    pass
+
+        if prompt_dir is None:
+            prompt_dir = Path(_default_output_dir("prompt"))
 
         prompt_dir.mkdir(parents=True, exist_ok=True)
 
