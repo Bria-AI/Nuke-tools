@@ -1365,15 +1365,30 @@ def resolve_output_path(node: Any, cfg: Any, run_id: str, result_prefix: str) ->
     except Exception:
         use_global_knob = False
 
-    env_use_global = _is_true(os.getenv("USE_BRIA_PROJECT_PATH"))
-    cfg_use_global = bool(getattr(cfg, "use_bria_project_path", False))
-
-    if use_global_knob and (env_use_global or cfg_use_global):
-        global_dir = _expand_env_tokens(os.getenv("BRIA_PROJECT_PATH") or getattr(cfg, "nuke_output_dir", "") or "")
+    # Per-node knob is the source of truth. The global default already
+    # consulted env/cfg at knob-init time (see project_path_defaults.py);
+    # re-checking here produced a silent fallback to OS-cleaned temp when
+    # env/cfg were unset, which broke non-destructive Read-node persistence.
+    if use_global_knob:
+        global_dir = _expand_env_tokens(
+            os.getenv("BRIA_PROJECT_PATH") or getattr(cfg, "nuke_output_dir", "") or ""
+        )
         if global_dir:
             p = Path(global_dir) / "images" / image_subdir
             p.mkdir(parents=True, exist_ok=True)
             return str(p / file_name)
+        try:
+            node_name = node.name()
+        except Exception:
+            node_name = "<unknown>"
+        try:
+            nuke.tprint(
+                f"[Bria] '{node_name}' has use_global_project_path=ON but no "
+                f"BRIA_PROJECT_PATH env or cfg.nuke_output_dir is set — falling "
+                f"back to script-dir / Desktop default"
+            )
+        except Exception:
+            pass
 
     explicit_path = ""
     try:
