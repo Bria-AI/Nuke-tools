@@ -33,4 +33,5 @@ Thumbs.db
 
 # Example assets (held out of first release; add back when finalised)
 examples/images/
-examples/scenes/
+examples/scenes/*
+!examples/scenes/Bria_Nuke_Tools_Example_v01.nk
