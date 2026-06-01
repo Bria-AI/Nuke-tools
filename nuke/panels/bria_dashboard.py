@@ -14,22 +14,12 @@ except Exception:
 
 from bria_core.dashboard_qt import BriaDashboardWidget
 from bria_core.utils import resolve_temp_dir
-from project_path_defaults import default_bria_project_path
-
-_BRIA_NODE_PREFIXES = ("Bria_",)
+from project_path_defaults import default_bria_project_path, sync_all_nodes_to_global
 
 
 def _sync_all_bria_nodes_project_toggle(use_project: bool) -> None:
     """Propagate the dashboard 'Use Global Project Path' toggle to all Bria nodes in the scene."""
-    try:
-        for node in nuke.allNodes("Group"):
-            if not node.name().startswith(_BRIA_NODE_PREFIXES):
-                continue
-            knob = node.knob("use_global_project_path")
-            if knob is not None:
-                knob.setValue(use_project)
-    except Exception:
-        pass
+    sync_all_nodes_to_global(use_project)
 
 
 def _set_project_favorite(path_value: str, enabled: bool = True) -> None:

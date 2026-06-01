@@ -6,7 +6,12 @@ import os
 from pathlib import Path
 
 from _startup_loader import ensure_paths, resolve_nuke_root, resolve_repo_root, run_bootstrap_init
-from project_path_defaults import default_bria_project_path, default_use_global_project_path, rehydrate_project_path_env
+from project_path_defaults import (
+    default_bria_project_path,
+    default_use_global_project_path,
+    rehydrate_project_path_env,
+    sync_all_nodes_to_global,
+)
 
 
 def _is_true_env(value: str | None) -> bool:
@@ -167,6 +172,34 @@ def _register_bria_node_defaults() -> None:
 
     try:
         nuke.addOnScriptLoad(_restore_prompt_heights)
+    except Exception:
+        pass
+
+    # ── Project-path knob re-sync ──────────────────────────────────────
+    # Per-node `use_global_project_path` values persist in saved .nk
+    # files. If the global default changes between sessions (e.g. the
+    # user enables the Dashboard toggle after the file was last saved),
+    # saved nodes load with their old knob values and silently fall back
+    # to the OS temp directory for output — which is purged on a TTL by
+    # every OS. This handler brings persisted per-node knobs back in
+    # sync with the current global default on every script load.
+
+    def _sync_project_path_knobs() -> None:
+        try:
+            changed = sync_all_nodes_to_global()
+        except Exception:
+            return
+        if changed:
+            try:
+                nuke.tprint(
+                    f"[Bria] Synced use_global_project_path on {changed} node(s) "
+                    f"to match the current Dashboard/global setting"
+                )
+            except Exception:
+                pass
+
+    try:
+        nuke.addOnScriptLoad(_sync_project_path_knobs)
     except Exception:
         pass
 

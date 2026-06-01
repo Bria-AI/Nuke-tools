@@ -58,3 +58,42 @@ def rehydrate_project_path_env() -> tuple[bool, str]:
     if not project_path:
         os.environ.pop("BRIA_PROJECT_PATH", None)
     return use_project, str(os.getenv("BRIA_PROJECT_PATH") or "").strip()
+
+
+def sync_all_nodes_to_global(use_project: bool | None = None) -> int:
+    """Set every Bria node's ``use_global_project_path`` knob to ``use_project``.
+
+    Detects Bria nodes by knob presence rather than name prefix, so renamed
+    nodes are still caught. When ``use_project`` is ``None``, reads the current
+    global default from env/config. Returns the count of nodes updated (knob
+    value actually changed); 0 if Nuke is unavailable or no Bria nodes exist.
+    """
+    try:
+        import nuke  # type: ignore
+    except Exception:
+        return 0
+
+    if use_project is None:
+        use_project = default_use_global_project_path()
+    target = bool(use_project)
+
+    changed = 0
+    try:
+        for node in nuke.allNodes("Group"):
+            try:
+                knob = node.knob("use_global_project_path")
+            except Exception:
+                knob = None
+            if knob is None:
+                continue
+            try:
+                if bool(knob.value()) == target:
+                    continue
+                knob.setValue(target)
+                changed += 1
+            except Exception:
+                continue
+    except Exception:
+        return changed
+
+    return changed
