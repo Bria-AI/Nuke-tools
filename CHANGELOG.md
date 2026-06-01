@@ -1,5 +1,21 @@
 # Bria Nuke Integration - Changelog
 
+## [0.2.0](https://github.com/Bria-AI/Nuke-tools/compare/bria-nuke-v0.1.1...bria-nuke-v0.2.0) (2026-06-01)
+
+
+### Features
+
+* **api:** add extract_image_urls helper for multi-image API responses ([805e5b2](https://github.com/Bria-AI/Nuke-tools/commit/805e5b2290fac9863e194389e0a80d04d4222c4e))
+* **generate:** multi-variant FIBO Generate (1-4 parallel calls) ([1f5c6ee](https://github.com/Bria-AI/Nuke-tools/commit/1f5c6ee0b7e44d6421c1fe4a3f49d2f7ef4af576))
+* **recipes:** Create Mask, Create Soft Mask, Remove Greenscreen Spill presets ([eb0c0b6](https://github.com/Bria-AI/Nuke-tools/commit/eb0c0b647f1b3f2186c62abd8c73bab61d84d776))
+* **recipes:** Premultiply with Mask flow + Mask Edge Softness controls ([aa52eb4](https://github.com/Bria-AI/Nuke-tools/commit/aa52eb49b2b675912e5c5c1ce559293829d6fa33))
+
+
+### Bug Fixes
+
+* **enhance:** route /image/edit/enhance to async (sync=true returns 422) ([07d9e99](https://github.com/Bria-AI/Nuke-tools/commit/07d9e99872e7c5793f30f4019b0a76b169424df3))
+* **recipes:** targeted-prompt regressions for object and comp presets ([8470aad](https://github.com/Bria-AI/Nuke-tools/commit/8470aad676f7378dee3d18a74129faa098ae1ba2))
+
 ## [0.1.1](https://github.com/Bria-AI/Nuke-tools/compare/bria-nuke-v0.1.0...bria-nuke-v0.1.1) (2026-04-27)
 
 
