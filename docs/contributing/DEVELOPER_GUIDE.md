@@ -155,7 +155,7 @@ Release Please (`.github/workflows/release-please.yml`) runs on push to `main`. 
   ```
   Release-As: 0.2.0
   ```
-- The workflow needs a `TEMP_RELEASE_TOKEN` secret (a PAT with `contents: write` + `pull-requests: write`) so release-please PRs can push to a protected `main`.
+- The workflow uses the org secret `DEVOPS_PAT_TOKEN` (a PAT with `contents: write` + `pull-requests: write`) so release-please PRs can push to a protected `main`.
 
 ## Pre-commit hooks
 
