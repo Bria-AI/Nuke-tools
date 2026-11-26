@@ -1,5 +1,14 @@
 # Bria Nuke Integration - Changelog
 
+## [0.2.1](https://github.com/Bria-AI/Nuke-tools/compare/bria-nuke-v0.2.0...bria-nuke-v0.2.1) (2026-11-26)
+
+
+### Bug Fixes
+
+* **paths:** honor per-node use_global_project_path knob in resolve_output_path ([894abeb](https://github.com/Bria-AI/Nuke-tools/commit/894abeb9093b7f3c591912f61a2a95d58569d448))
+* **paths:** persistent Desktop fallback for output paths (mirrors Houdini) ([5b548fc](https://github.com/Bria-AI/Nuke-tools/commit/5b548fc2b9558db8d15e0d259de0bc6dd11546ad))
+* **paths:** re-sync per-node project-path knob on script load ([86cd63f](https://github.com/Bria-AI/Nuke-tools/commit/86cd63fd208c6ab5606f3c65932a172962510c5f))
+
 ## [0.2.0](https://github.com/Bria-AI/Nuke-tools/compare/bria-nuke-v0.1.1...bria-nuke-v0.2.0) (2026-06-01)
 
 
